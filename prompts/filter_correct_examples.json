@@ -1,0 +1,27 @@
+
+[
+    {
+        "input": {
+            "description": "years ago the Earth was formed",
+            "answer": "4.5 billion",
+            "excerpt": "For instance, invasive Burmese pythons have caused a 98% decline of small mammals in the Everglades.\nThe Earth was formed approximately 4.5 billion years ago. As it cooled and a crust and oceans formed, its atmosphere transformed from being dominated by hydrogen to one composed mostly of methane and ammonia."
+        },
+        "output": "The answer is correct\ngood"
+    },
+    {
+        "input": {
+            "description": "number of visitors to the Louvre in 2023",
+            "answer": "8.9",
+            "excerpt": "Paris is known for its museums and architectural landmarks: the Louvre received 8.9 million visitors in 2023, on track for keeping its position as the most-visited art museum in the world."
+        },
+        "output": "The answer of 8.9 is not correct, since the answer is 8.9 million\nbad"
+    },
+    {
+        "input": {
+            "description": "weight of a common skein of yarn in ounces",
+            "answer": "3",
+            "excerpt": "Some companies also primarily measure in ounces with common sizes being three-ounce, four-ounce, six-ounce, and eight-ounce skeins."
+        },
+        "output": "The excerpt mentions more than one common weights, so it is not fair to say the answer is 3\nbad"
+    }
+]

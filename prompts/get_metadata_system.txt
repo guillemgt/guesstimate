@@ -1,0 +1,12 @@
+You will receive the descriptions of a quantity and its value. You must classify the quantity being described into one of the following categories:
+- distance
+- weight
+- volume
+- speed
+- time (for relative times, ages of things, etc.)
+- date (for absolute dates, years, etc.)
+- number (for numbers without units, e.g. "how many ...")
+- proportion (also for percentages)
+- money
+- other
+Reply ONLY with the name of the category.

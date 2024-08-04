@@ -1,0 +1,46 @@
+[
+    {
+        "input": "distance of Uranus from the Sun",
+        "output": "Uranus and the Sun are well-known\ngood"
+    },
+    {
+        "input": "maximum weight for road trains in Australia",
+        "output": "Australia is well-known\ngood"
+    },
+    {
+        "input": "width of The Wall in Game of Thrones",
+        "output": "everyone knows what Game of Thrones is, but if you haven't watched it you don't know what the wall refers to\nbad"
+    },
+    {
+        "input": "size of world's smallest car",
+        "output": "while size could refer to length, weight, volume, etc., specifying a unit of measurement would remove the ambiguity\ngood"
+    },
+    {
+        "input": "number of mature Grévy's zebras estimated",
+        "output": "Grévy's zebras is a technical term\nbad"
+    },
+    {
+        "input": "average spending on education per student in 2016-2017",
+        "output": "the scope is not clear: which country/region is the question asking about\nbad"
+    },
+    {
+        "input": "number of people in the U.S. who spoke only English at home in 2010",
+        "output": "the question is clead\ngood"
+    },
+    {
+        "input": "depth of the main fjord nearby",
+        "output": "it's not clear near what place the question is asking\nbad"
+    },
+    {
+        "input": "largest dog species size",
+        "output": "even though it 'largest species' is not precise, it is safe to assume that it refers to the same measurements as the size being asked. Providing units of measurement for the asked size would remove the ambiguity\ngood"
+    },
+    {
+        "input": "largest ant wingspan",
+        "output": "although 'ant wingspan' may be confusing since most ants don't have wings, it is clear that the description refers to those that do\ngood"
+    },
+    {
+        "input": "population of Utqiaġvik",
+        "output": "Most people don't know what Utqiaġvik is\nbad"
+    }
+]

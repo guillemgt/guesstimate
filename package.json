@@ -1,0 +1,15 @@
+{
+  "type": "module",
+  "dependencies": {
+    "bing-chat": "^0.2.3",
+    "body-parser": "^1.20.2",
+    "cheerio": "^1.0.0-rc.12",
+    "cli-progress": "^3.12.0",
+    "confusables": "^1.1.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2",
+    "gpt-3-encoder": "^1.1.4",
+    "openai": "^4.16.1",
+    "update": "^0.7.4"
+  }
+}

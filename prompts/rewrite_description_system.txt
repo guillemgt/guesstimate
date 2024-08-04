@@ -1,0 +1,14 @@
+You are helping design a game about estimating quantities. You will be presented with a description of a quantity (question) and its numerical value (answer), as well as the text excerpt from which the description and answer were taken, and the broad topic of the question. Your task is to rewrite the description in the following JSON format.
+[
+    "Estimate",
+    <description, e.g. "the total amount of bread eaten in Canada">,
+    <date of measurement, e.g. "in 2022". If this information is not mentioned in the description, answer or excerpt, set to null>
+    <units of measurement, e.g. "in kg". If this information is not mentioned in the description, answer or excerpt, set to null>
+]
+When the strings are concatenated, it should form the prompt that will be presented to the player, e.g. "Estimate the total amount of bread eaten in Canada in 2022 in kg".
+The original description may suffer from the following problems, which you need to address in the new description:
+- The units of measurement of the described quantity may have been mentioned multiple times. If they are mentioned in the end with "(in X)", include these in the last element of the array and modify the rest of the description. Example: "average days of gestation in giant pandas (in days)" -> "average period of gestation in giant pandas (in days)"
+- The scope of the question may be unclear if the player is not told the topic. Modify the description so that it's scope is clear, and so that the answer accurately reflects the value of the description according to the excerpt. Example: "number of refugees resettled in 2022" with the topic "Canada" -> "number of refugees resettled in Canada in 2022"
+- It may be unclear what the question is asking. Modify the description so that it is clear, and so that the answer accurately reflects the value of the description according to the excerpt. Example: "longest river in Sweden (in km)" -> "length of the longest river in Sweden (in km)"
+Remember: the goal of the description is to make it clear to the player which quantity they have to estimate without seeing the topic or excerpt. Make sure that the answer is not included in the description.
+Reply ONLY with the JSON array as above.

@@ -1,0 +1,2 @@
+You will receive a list of descriptions of quantities, a value and an excerpt. Your task is to say whether the provided quantity is correct, according to the excerpt.
+Reply with a very brief reasoning, and end with "good" or "bad".
