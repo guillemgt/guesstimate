@@ -2,6 +2,8 @@
 
 A pipeline to generate questions about estimating unknown quantities with AI.
 
+You can play the game [here](https://tarr.ch/guesstimate).
+
 ## Usage
 
 ### Generating the questions
