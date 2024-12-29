@@ -42,5 +42,3 @@ async function main(params = {
 }
 
 export { main };
-
-// GPT-4o mini: $1.0987 for 3815 questions
