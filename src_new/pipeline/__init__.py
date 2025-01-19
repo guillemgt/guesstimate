@@ -1,0 +1,5 @@
+from pipeline.stage_0_add_vital_topics import add_vital_topics
+from pipeline.stage_0_add_manual_topics import add_manual_topics
+from pipeline.stage_0_add_topics_by_pageviews import add_topics_by_pageviews
+
+from pipeline.stage_1_normalize_topics import normalize_topics
