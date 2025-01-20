@@ -16,17 +16,20 @@ def parse_redirects(file_path):
     redirects = {}
 
     # Regex to capture the INSERT statements containing redirect data
-    redirect_pattern = re.compile(r"INSERT INTO `redirect` VALUES \((\d+),(\d+),.*?\);")
 
     with open(file_path, "r", encoding="utf-8") as f:
         for line in tqdm(f):
-            match = redirect_pattern.search(line)
-            if match:
-                # Extract source and target page IDs
-                source_id = int(match.group(1))
-                target_id = int(match.group(2))
-                # Store the redirect relationship
-                redirects[source_id] = target_id
+            if line.startswith("INSERT INTO `redirect` VALUES "):
+                # Regular expression to match each entry in the VALUES section
+                pattern = re.compile(r"\((\d+),(\d+),'([^']+)','([^,']*)','([^,']*)'\)")
+
+                # Find all matches in the content
+                matches = pattern.findall(line)
+
+                # Iterate over all matches and store the relevant data
+                for match in matches:
+                    if match[3]:
+                        redirects[match[2]] = match[3]
 
     return redirects
 
@@ -39,11 +42,12 @@ def add_topics_by_pageviews(
     input_file: str | None = None,
     output_file: str | None = None,
     log_file: str | None = None,
+    pipeline_step: int = 0,
     redirects_file: str = "data/input/wikipedia_pageviews/enwiki-20240901-redirect.sql.json",
     pageviews_files: list[str] = ["data/input/wikipedia_dumps/pageviews-20240206-user"],
     min_view_threshold: int = 3,
 ) -> str:
-    output_file, log_file = output_and_log_files(output_file, log_file)
+    output_file, log_file = output_and_log_files(output_file, log_file, pipeline_step)
     if os.path.exists(output_file):
         print(f"Output file {output_file} already exists.")
         return output_file

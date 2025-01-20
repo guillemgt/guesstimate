@@ -8,12 +8,13 @@ from utils.input_output import output_and_log_files
 
 
 def add_manual_topics(
-    input_file: str | None = None,
+    input_file: str,
     output_file: str | None = None,
     log_file: str | None = None,
+    pipeline_step: int = 0,
     manual_topics_file: str = "data/input/topics_manual.json",
 ) -> str:
-    output_file, log_file = output_and_log_files(output_file, log_file)
+    output_file, log_file = output_and_log_files(output_file, log_file, pipeline_step)
     if os.path.exists(output_file):
         print(f"Output file {output_file} already exists.")
         return output_file

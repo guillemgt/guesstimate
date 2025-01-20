@@ -77,9 +77,10 @@ def process_into_article_list(
 
 
 def add_vital_topics(
-    input_file: str | None = None,
+    input_file: str,
     output_file: str | None = None,
     log_file: str | None = None,
+    pipeline_step: int = 0,
 ) -> str:
     """
     Fetches data for all letters of the alphabet and merges them into a single list.
@@ -88,7 +89,7 @@ def add_vital_topics(
     - dict: A merged list with all articles from A to Z.
     """
 
-    output_file, log_file = output_and_log_files(output_file, log_file)
+    output_file, log_file = output_and_log_files(output_file, log_file, pipeline_step)
     if os.path.exists(output_file):
         print(f"Output file {output_file} already exists.")
         return output_file
