@@ -103,12 +103,16 @@ class OpenAIBatchHandler:
             )
             if os.path.exists(filename):
                 decoded_content = open(
-                    filename, "r", encoding="utf-8",
+                    filename,
+                    "r",
+                    encoding="utf-8",
                 ).read()
-            else:    
+            else:
                 decoded_content = content.response.content.decode("utf-8")
                 with open(
-                    filename, "w", encoding="utf-8",
+                    filename,
+                    "w",
+                    encoding="utf-8",
                 ) as f:
                     f.write(decoded_content)
 
@@ -204,13 +208,16 @@ class OpenAIBatchHandler:
                 for message in body["messages"]
             ) + body.get("max_tokens", body.get("max_completion_tokens", 0))
 
-            if (
+            reached_token_limit = (
                 max_tokens_per_batch is not None
                 and tokens_in_batch + tokens_in_request > max_tokens_per_batch
-            ) or (
+            )
+            reached_request_limit = (
                 max_requests_per_batch is not None
                 and requests_in_batch >= max_requests_per_batch
-            ):
+            )
+
+            if reached_token_limit or reached_request_limit:
                 batch_infos.append(
                     self._upload_and_return_batch_info(
                         batch_call_id=batch_call_id,
@@ -221,6 +228,11 @@ class OpenAIBatchHandler:
                         tokens_in_batch=tokens_in_batch,
                     )
                 )
+
+                if reached_token_limit:  # We can't do several batches concurrently
+                    self.wait_for_batches(
+                        [batch_info.batch_id for batch_info in batch_infos]
+                    )
 
                 requests_in_batch = 0
                 tokens_in_batch = 0

@@ -231,6 +231,9 @@ def fetch_api_response_and_process_with_logprobs(
                 probs /= np.sum(probs)
                 prob_positive = probs[0]
 
+            if len(logprob_positive_tokens) == 0:
+                prob_positive = 1.0 - prob_negative
+
             logprob_correct = np.log(prob_positive).item()
 
             return_dicts.append({logprob_key: logprob_correct})
@@ -270,8 +273,8 @@ def generic_api_processing_step(
         user_prompts=user_prompts,
         log_path=log_path,
         inprompt_examples=[
-            (format_question_into_prompt(example_input), example_output)
-            for example_input, example_output in examples
+            (format_question_into_prompt(example["input"]), example["output"])
+            for example in examples
         ],
     )
     new_questions = [
