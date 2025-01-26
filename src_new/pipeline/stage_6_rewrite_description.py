@@ -77,6 +77,7 @@ EXAMPLES = [
             "topic": "Cat",
             "found_excerpt": "In many countries, they are believed to have nine lives, but in Italy, Germany, Greece, Brazil and some Spanish-speaking regions, they are said to have seven lives, while in Arabic traditions, the number of lives is six.",
             "description": "number of lives cats are believed to have in some cultures (like Italy and Germany)",
+            "value": {"unit": None},
         },
         "output": EstimationPrompt(
             prompt="Estimate the number of lives cats are believed to have in Italy and Germany",
@@ -89,6 +90,7 @@ EXAMPLES = [
             "topic": "Plastic",
             "found_excerpt": "9.2 billion metric tons of plastic are estimated to have been made between 1950 and 2017, more than half of which has been produced since 2004.",
             "description": "total plastic produced between 1950 and 2017",
+            "value": {"unit": "metric tons"},
         },
         "output": EstimationPrompt(
             prompt="Estimate the total amount of plastic produced",
@@ -136,7 +138,8 @@ EXAMPLES = [
         "input": {
             "topic": "Sweden",
             "found_excerpt": "Northern and central Sweden have several wide rivers known as alvar, commonly sourced within the Scandinavian Mountains. The longest river is Klaralven-Gota alv, which originates in Trondelag in central Norway, running 1,160 kilometres (720 mi) before it enters the sea at Gothenburg. In southern Sweden, narrower rivers known as aar are also common.",
-            "description": "longest river in Sweden (in km)",
+            "description": "longest river in Sweden",
+            "value": {"unit": "km"},
         },
         "output": EstimationPrompt(
             prompt="Estimate the length of the longest river in Sweden",
@@ -149,6 +152,7 @@ EXAMPLES = [
             "topic": "Panda",
             "found_excerpt": "Copulation time ranges from 30 seconds to five minutes, but the male may mount her repeatedly to ensure successful fertilisation. The gestation period is somewhere between 95 and 160 days - the variability is due to the fact that the fertilized egg may linger in the reproductive system for a while before implanting on the uterine wall.",
             "description": "average days of gestation in giant pandas (in days)",
+            "value": {"unit": "days"},
         },
         "output": EstimationPrompt(
             prompt="Estimate the average period of gestation in giant pandas",
@@ -171,7 +175,7 @@ EXAMPLES = [
 ]
 
 
-def make_input_human_readable(question):
+def make_input_human_readable(question, include_units=False):
     return f"""## Topic
 
 {question["topic"]}
@@ -180,7 +184,9 @@ def make_input_human_readable(question):
 {question["found_excerpt"]}
 
 ## Description
-{question["description"]}"""
+{question["description"]}""" + (
+        "" if not include_units else f"""\n\n## Units\n{question['value']['unit']}"""
+    )
 
 
 def rewrite_description(
@@ -189,6 +195,7 @@ def rewrite_description(
     log_file: str | None = None,
     pipeline_step: int = 0,
     model="gpt-4o-mini",
+    include_units: bool = False,
 ) -> str:
 
     output_file, log_file = output_and_log_files(output_file, log_file, pipeline_step)
@@ -201,7 +208,9 @@ def rewrite_description(
         output_path=output_file,
         log_path=log_file,
         instruction=SYSTEM_PROMPT,
-        format_question_into_prompt=make_input_human_readable,
+        format_question_into_prompt=partial(
+            make_input_human_readable, include_units=include_units
+        ),
         fetch_api_response_and_process=partial(
             fetch_api_response_and_process_with_structured_outputs,
             response_type=EstimationPrompt,
@@ -215,3 +224,6 @@ def rewrite_description(
         filter_questions=lambda questions: questions,
         examples=EXAMPLES,
     )
+
+
+# TODO: In the future, it would have been better to rewrite the description and answer all at once, since then the information in the original answer (e.g. the units) can also be used to shape the new description (and answer)
