@@ -28,6 +28,7 @@ def generic_filter(
     output_file: str | None = None,
     log_file: str | None = None,
     pipeline_step: int = 0,
+    ignore_zeros: bool = False,
 ) -> str:
     """
     Filters according to wether a linear combination of some keys is above a certain threshold.
@@ -73,8 +74,11 @@ def generic_filter(
             [
                 sum([weight * question[key] for key, weight in generalized_key])
                 > threshold
-                or sum([weight * question[key] for key, weight in generalized_key])
-                == 0.0  # TODO: This is a hack because sometimes the logprobs where set to 0.0 erroneously
+                or (
+                    ignore_zeros
+                    and sum([weight * question[key] for key, weight in generalized_key])
+                    == 0.0
+                )  # TODO: This is a hack because sometimes the logprobs where set to 0.0 erroneously
                 for generalized_key, threshold in filters
             ]
         )

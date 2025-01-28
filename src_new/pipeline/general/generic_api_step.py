@@ -220,14 +220,22 @@ def fetch_api_response_and_process_with_logprobs(
             logprob_objects = seq_logprobs["content"][0]["top_logprobs"]
             prob_positive = 0.0
             prob_negative = 0.0
+            prob_positive_is_present = False
             for logprob_object in logprob_objects:
                 if logprob_object["token"] in logprob_positive_tokens:
+                    prob_positive_is_present = True
                     prob_positive += np.exp(logprob_object["logprob"])
                 elif logprob_object["token"] in logprob_negative_tokens:
                     prob_negative += np.exp(logprob_object["logprob"])
 
             if len(logprob_negative_tokens) > 0:
                 probs = np.array([prob_positive, prob_negative])
+                if np.sum(probs) == 0:
+                    probs = (
+                        np.array([1.0, 0.0])
+                        if prob_positive_is_present
+                        else np.array([0.0, 1.0])
+                    )
                 probs /= np.sum(probs)
                 prob_positive = probs[0]
 
@@ -283,7 +291,10 @@ def generic_api_processing_step(
         for question, api_response_dict in zip(questions, api_responses_dict_to_add)
     ]
     if sort_by_key:
-        new_questions = sorted(new_questions, key=lambda x: x[sort_by_key] or -np.inf)
+        new_questions = sorted(
+            new_questions,
+            key=lambda x: x[sort_by_key] if x[sort_by_key] is not None else -np.inf,
+        )
 
     filtered_questions = filter_questions(new_questions)
 
