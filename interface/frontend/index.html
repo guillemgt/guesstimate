@@ -24,12 +24,21 @@
         <button id="submit-btn">Guess</button>
       </div>
     </div>
+    <div id="waiting-for-answers-container">
+      <br>
+      <h2>Waiting for other players to guess...</h2>
+    </div>
     <div id="result-container" style="display: none;">
       <div id="visualization">
         <canvas id="visualization-canvas"></canvas>
       </div>
       <p><div id="found-excerpt"></div></p>
       <button id="next-question-btn">Next</button>
+    </div>
+    <div id="feedback-container">
+      <h2>What did you think of the question?</h2>
+      <button id="feedback-good-btn">Good</button>
+      <button id="feedback-bad-btn">Bad</button>
     </div>
     <button id="shareButton">Copy game link</button>
   </div>

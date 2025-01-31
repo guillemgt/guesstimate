@@ -15,7 +15,7 @@ body {
     text-align: center;
 }
 
-#question-container, #result-container {
+#question-container, #waiting-for-answers-container, #result-container, #feedback-container {
     margin-top: 20px;
 }
 
