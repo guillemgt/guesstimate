@@ -1,8 +1,0 @@
-You will receive the description of a quantity, and its numerical value. Your task is to serialize the description and value according into the following JSON format:
-{
- "units_of_measurement": (string containing the units of measurement of the value, which may have been present in the value or the description. If there are multiple units, choose one, prefarably in the metric system. Multipliers like 'hundred' or 'billion' do not count as units),
- "description": (the description),
- "value_is_approximate": (whether the value is exact or approximate. For example, if the answer was 'around 10 million' it is approximate),
- "value": (if the value is not given by an interval, one of whose ends may or may not be infinity, this is an int or float containing the numerical value. If multiplier words like 'hundred' or 'billion' are used, use scientific notation, e.g. '3e2' for 'three hundred'),
- "value_interval": (if the interval is a value, this is an array of two ints for floats following the above guidelines for the min and max of the interval. One of the elements may be "-infinity", "infinity". Do not worry about whether the ends are included in the interval, just include the numbers mentioned in the input values)
-}
