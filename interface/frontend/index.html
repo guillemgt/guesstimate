@@ -13,9 +13,11 @@
 <body>
   <div id="app">
     <h1>Guesstimate</h1>
+    <div id="loading-container">
+    </div>
     <div id="question-container">
       <!--<p><strong>Topic:</strong> <span id="topic"></span></p>-->
-      <p><span id="description"></span></p>
+      <p><span id="description"></span></p> 
       <p><span id="date"></span></p>
       <p><span id="unit"></span></p>
       <div id="input-container">
@@ -37,8 +39,12 @@
     </div>
     <div id="feedback-container">
       <h2>What did you think of the question?</h2>
-      <button id="feedback-good-btn">Good</button>
-      <button id="feedback-bad-btn">Bad</button>
+      <div id="feedback-button-container">
+        <div id="feedback-good-btn"></div>
+        <div id="feedback-bad-btn"></div>
+        <div>Interesting question</div>
+        <div>Bad question<br/>Wrong answer</div>
+      </div>
     </div>
     <button id="shareButton">Copy game link</button>
   </div>

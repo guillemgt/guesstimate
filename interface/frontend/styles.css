@@ -15,8 +15,10 @@ body {
     text-align: center;
 }
 
+
 #question-container, #waiting-for-answers-container, #result-container, #feedback-container {
     margin-top: 20px;
+    display: none;
 }
 
 #found-excerpt {
@@ -63,6 +65,99 @@ h1 {
     position: fixed; /* Changed to fixed for better positioning */
     bottom: 20px;
     right: 20px;
+}
+
+#loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 100px;
+}
+
+#loading-container::before { 
+    content: "";
+    width: 50px;
+    height: 50px;
+    border: 5px solid #b00;
+    border-top: 5px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+#feedback-container {
+    /* display: flex; */
+    flex-direction: column;
+    align-content: center;
+    align-items: center;
+}
+
+#feedback-button-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    grid-column-gap: 40px;
+    grid-row-gap: 40px;
+    max-width: 400px;
+}
+
+#feedback-good-btn, #feedback-bad-btn {
+    padding: 50px;
+    border-radius: 5px;
+    background-image: url(thumb.png);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 48px;
+    cursor: pointer;
+}
+
+
+#feedback-good-btn {
+    background-color: #aaedaa;
+    border: 3px solid #7fc77f;
+}
+
+#feedback-good-btn:hover {
+    background-color: #7fc77f;
+}
+
+#feedback-good-btn.clicked {
+    background-color: #efffef;
+    border-color: #c8e7c8;
+}
+
+#feedback-good-btn.notclicked {
+    background-color: #eee;
+    border-color: #ddd;
+}
+
+#feedback-bad-btn {
+    background-color: #edaaaa;
+    border: 3px solid #c77f7f;
+    transform: rotate(180deg);
+}
+
+#feedback-bad-btn:hover {
+    background-color: #c77f7f;
+}
+
+#feedback-bad-btn.clicked {
+    background-color: #feeef0;
+    border-color: #e7c8c8;
+}
+
+#feedback-bad-btn.notclicked {
+    background-color: #eee;
+    border-color: #ddd;
+}
+
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Media Queries for Responsive Design */

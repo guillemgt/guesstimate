@@ -7,6 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let gameClient = new OnlineGameClient("http://localhost:8080");
 
   // const topicElement = document.getElementById('topic');
+  const loadingContainer = document.getElementById("loading-container");
+  const questionContainer = document.getElementById("question-container");
   const descriptionElement = document.getElementById("description");
   const unitElement = document.getElementById("unit");
   const dateElement = document.getElementById("date");
@@ -24,44 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const context = canvas.getContext("2d");
 
   // Seeding
-  document.getElementById("shareButton").addEventListener("click", function () {
-    let sharable_code = gameClient.seed;
-    if (!sharable_code) {
-      return;
-    }
-
-    // Get the current URL
-    let currentUrl = new URL(window.location.href);
-
-    // Check if the search parameter already exists
-    if (currentUrl.searchParams.has("s")) {
-      // Update the existing search parameter
-      currentUrl.searchParams.set("s", sharable_code);
-    } else {
-      // Add the search parameter
-      currentUrl.searchParams.append("s", sharable_code);
-    }
-
-    // Get the modified URL as a string
-    const modifiedUrl = currentUrl.toString();
-
-    // // Change the current URL without refreshing the page
-    // history.pushState(null, '', modifiedUrl);
-
-    // Copy the modified URL to the clipboard
-    navigator.clipboard
-      .writeText(modifiedUrl)
-      .then(function () {
-        console.log("URL copied to clipboard");
-      })
-      .catch(function (err) {
-        alert("Failed to copy " + modifiedUrl + " : ", err);
-      });
-  });
+  document
+    .getElementById("shareButton")
+    .addEventListener("click", () => gameClient.onShare());
 
   // Questions
 
   displayQuestion = function (question) {
+    loadingContainer.style.display = "none";
+    questionContainer.style.display = "block";
+
     // topicElement.textContent = question.topic;
     descriptionElement.textContent = question.description[0];
     dateElement.innerHTML = question.description[1]
@@ -88,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     inputContainer.style.display = "none";
     watingForAnswersContainer.style.display = "none";
     resultContainer.style.display = "none";
-    feedbackContainer.style.display = "block";
+    feedbackContainer.style.display = "flex";
   };
 
   function toFixed_leq(x, n) {
@@ -436,10 +410,6 @@ document.addEventListener("DOMContentLoaded", () => {
     requestAnimationFrame(animate);
   }
 
-  function handleNextQuestion() {
-    gameClient.startRound();
-  }
-
   submitBtn.addEventListener("click", () => {
     const userAnswer = parseNumberString(userAnswerElement.value);
     if (userAnswer === null) {
@@ -450,7 +420,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     gameClient.submitAnswer(userAnswer);
   });
-  nextQuestionBtn.addEventListener("click", handleNextQuestion);
+  nextQuestionBtn.addEventListener("click", () =>
+    gameClient.handleNextQuestion()
+  );
 
   gameClient.onQuestionChecking = function (
     userAnswers,
@@ -713,7 +685,13 @@ class OnlineGameClient extends GameClient {
     this.socket.onmessage = this.onMessage;
     this.socket.onopen = () => {
       console.log("Connected to the server.");
-      this.startNewGame();
+
+      let currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.has("r")) {
+        this.joinExistingGame(currentUrl.searchParams.get("r"));
+      } else {
+        this.startNewGame();
+      }
     };
     this.socket.onclose = () => console.log("Disconnected from the server.");
     this.socket.onerror = (error) => console.error("WebSocket error:", error);
@@ -727,13 +705,13 @@ class OnlineGameClient extends GameClient {
       case "room_created":
         this.roomCode = data.roomCode;
         console.log(`Room created with code: ${this.roomCode}`);
-        this.startRound(); //FIXME
+        this.startRound();
         break;
       case "player_joined":
         console.log(data.message);
-        this.startRound(); //FIXME
         break;
       case "new_question":
+        // this.removeRoomCodeFromURL();
         const question = data.question;
         displayQuestion(question);
         break;
@@ -751,6 +729,17 @@ class OnlineGameClient extends GameClient {
       case "waiting_for_everyone_to_be_ready":
         displayFeedbackScreen();
         break;
+      case "error":
+        console.error("Server error:", data.code);
+        switch (data.code) {
+          case "room_not_found":
+            this.removeRoomCodeFromURL();
+            // TODO: Display error message
+            break;
+          default:
+            break;
+        }
+        break;
     }
   }
 
@@ -760,6 +749,24 @@ class OnlineGameClient extends GameClient {
     } else {
       console.error("Socket is not open. Cannot send message.");
     }
+  }
+
+  putRoomCodeInURL() {
+    let currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("r", this.roomCode);
+    const modifiedUrl = currentUrl.toString();
+
+    // Change the current URL without refreshing the page
+    history.pushState(null, "", modifiedUrl);
+  }
+
+  removeRoomCodeFromURL() {
+    let currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete("r");
+    const modifiedUrl = currentUrl.toString();
+
+    // Change the current URL without refreshing the page
+    history.pushState(null, "", modifiedUrl);
   }
 
   // Room management
@@ -795,6 +802,49 @@ class OnlineGameClient extends GameClient {
         return v.toString(16);
       }
     );
+  }
+
+  //
+
+  onShare() {
+    let sharable_code = this.roomCode;
+    if (!sharable_code) {
+      return;
+    }
+
+    // Get the current URL
+    let currentUrl = new URL(window.location.href);
+
+    // Check if the search parameter already exists
+    if (currentUrl.searchParams.has("r")) {
+      // Update the existing search parameter
+      currentUrl.searchParams.set("r", sharable_code);
+    } else {
+      // Add the search parameter
+      currentUrl.searchParams.append("r", sharable_code);
+    }
+
+    // Get the modified URL as a string
+    const modifiedUrl = currentUrl.toString();
+
+    console.log("Modified URL:", modifiedUrl);
+
+    // Copy the modified URL to the clipboard
+    navigator.clipboard
+      .writeText(modifiedUrl)
+      .then(function () {
+        console.log("URL copied to clipboard");
+      })
+      .catch(function (err) {
+        alert("Failed to copy " + modifiedUrl + " : ", err);
+      });
+
+    this.putRoomCodeInURL();
+  }
+
+  handleNextQuestion() {
+    this.send("ready_for_next_round");
+    displayFeedbackScreen();
   }
 }
 
@@ -876,5 +926,44 @@ class OfflineGameClient extends GameClient {
 
   on(action, callback) {
     this.eventHandlers[action] = callback;
+  }
+
+  onShare() {
+    let sharable_code = this.seed;
+    if (!sharable_code) {
+      return;
+    }
+
+    // Get the current URL
+    let currentUrl = new URL(window.location.href);
+
+    // Check if the search parameter already exists
+    if (currentUrl.searchParams.has("s")) {
+      // Update the existing search parameter
+      currentUrl.searchParams.set("s", sharable_code);
+    } else {
+      // Add the search parameter
+      currentUrl.searchParams.append("s", sharable_code);
+    }
+
+    // Get the modified URL as a string
+    const modifiedUrl = currentUrl.toString();
+
+    // // Change the current URL without refreshing the page
+    // history.pushState(null, '', modifiedUrl);
+
+    // Copy the modified URL to the clipboard
+    navigator.clipboard
+      .writeText(modifiedUrl)
+      .then(function () {
+        console.log("URL copied to clipboard");
+      })
+      .catch(function (err) {
+        alert("Failed to copy " + modifiedUrl + " : ", err);
+      });
+  }
+
+  handleNextQuestion() {
+    this.startRound();
   }
 }

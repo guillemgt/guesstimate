@@ -6,10 +6,75 @@ import url from "url";
 
 class Room {
   constructor() {
+    this.roomCode = generateRoomCode();
     this.players = new Map(); // uuid -> ws
     this.currentQuestion = null;
     this.totalScores = new Map(); // uuid -> score
     this.answersThisRound = new Map(); // uuid -> answer
+    this.readyForNextRound = new Map(); // uuid -> answer
+    this.state = null; // "waiting_for_answers", "waiting_for_next_round"
+  }
+
+  startRound() {
+    const questionIndex = Math.floor(Math.random() * ALL_QUESTIONS.length);
+    const question = ALL_QUESTIONS[questionIndex];
+    this.currentQuestion = { question, index: questionIndex };
+    this.answersThisRound = new Map();
+
+    broadcast(this.roomCode, {
+      action: "new_question",
+      question: this.currentQuestion.question,
+    });
+
+    this.state = "waiting_for_answers";
+  }
+
+  proceedIfAllAnswersAreSubmitted() {
+    if (this.answersThisRound.size !== this.players.size) return false;
+
+    const question = this.currentQuestion.question;
+    const player_answers = this.answersThisRound;
+    const player_scores = computeScores(player_answers, question);
+    const player_answers_and_scores = Array.from(player_answers).map(
+      ([player_uuid, answer]) => ({
+        player: this.players.get(player_uuid).playerName,
+        answer,
+        score: player_scores.get(player_uuid),
+      })
+    );
+
+    this.players.forEach((player) => {
+      const score = player_scores.get(player);
+      this.totalScores.set(player, this.totalScores.get(player) + score);
+    });
+
+    broadcast(this.roomCode, {
+      action: "round_scores",
+      data: player_answers_and_scores,
+      correct_answer: question.answer,
+      excerpt: question.excerpt,
+    });
+    this.currentQuestion = null;
+
+    this.readyForNextRound = new Map();
+    this.state = "waiting_for_next_round";
+    return true;
+  }
+
+  proceedIfEveryoneIsReadyForNextRound() {
+    if (this.readyForNextRound.size === this.players.size) {
+      this.startRound();
+      return true;
+    }
+    return false;
+  }
+
+  proceedAccordingToState() {
+    if (this.state === "waiting_for_answers") {
+      this.proceedIfAllAnswersAreSubmitted();
+    } else if (this.state === "waiting_for_next_round") {
+      this.proceedIfEveryoneIsReadyForNextRound();
+    }
   }
 }
 
@@ -32,17 +97,17 @@ wss.on("connection", (ws, req) => {
     return;
   }
   ws.playerName = generatePlayerName();
-  ws.uuid = query.uuid;
+  ws.uuid = requestQuery.uuid;
   ws.on("message", (message) => {
     try {
       const data = JSON.parse(message);
 
       switch (data.action) {
         case "create_room": {
-          const roomCode = generateRoomCode();
           const room = new Room();
-          room.players.set(ws.uuid, ws);
+          const roomCode = room.roomCode;
           rooms.set(roomCode, room);
+          room.players.set(ws.uuid, ws);
           ws.roomCode = roomCode;
           ws.send(JSON.stringify({ action: "room_created", roomCode }));
           break;
@@ -59,9 +124,18 @@ wss.on("connection", (ws, req) => {
               action: "player_joined",
               message: "A new player has joined the room.",
             });
+
+            if (room.state == "waiting_for_answers") {
+              ws.send(
+                JSON.stringify({
+                  action: "new_question",
+                  question: room.currentQuestion.question,
+                })
+              );
+            }
           } else {
             ws.send(
-              JSON.stringify({ action: "error", message: "Room not found." })
+              JSON.stringify({ action: "error", code: "room_not_found" })
             );
           }
           break;
@@ -72,14 +146,7 @@ wss.on("connection", (ws, req) => {
           const room = rooms.get(roomCode);
           if (!room) return;
 
-          const questionIndex = Math.floor(
-            Math.random() * ALL_QUESTIONS.length
-          );
-          const question = ALL_QUESTIONS[questionIndex];
-          room.currentQuestion = { question, index: questionIndex };
-          room.answersThisRound = new Map();
-
-          broadcast(roomCode, { action: "new_question", question });
+          room.startRound();
           break;
         }
 
@@ -91,41 +158,26 @@ wss.on("connection", (ws, req) => {
 
           room.answersThisRound.set(ws.uuid, answer);
 
-          if (room.answersThisRound.size === room.players.size) {
-            const question = room.currentQuestion.question;
-            const player_answers = room.answersThisRound;
-            const player_scores = computeScores(player_answers, question);
-            const player_answers_and_scores = Array.from(player_answers).map(
-              ([player_uuid, answer]) => ({
-                player: room.players.get(player_uuid).playerName,
-                answer,
-                score: player_scores.get(player_uuid),
-              })
-            );
-
-            room.players.forEach((player) => {
-              const score = player_scores.get(player);
-              room.totalScores.set(
-                player,
-                room.totalScores.get(player) + score
-              );
-            });
-
-            broadcast(roomCode, {
-              action: "round_scores",
-              data: player_answers_and_scores,
-              correct_answer: question.answer,
-              excerpt: question.excerpt,
-            });
-            room.currentQuestion = null;
-          } else {
+          if (!room.proceedIfAllAnswersAreSubmitted()) {
             ws.send(JSON.stringify({ action: "answer_submitted" }));
           }
           break;
         }
 
+        case "ready_for_next_round": {
+          const roomCode = ws.roomCode;
+          const room = rooms.get(roomCode);
+          if (!room) return;
+
+          room.readyForNextRound.set(ws.uuid, true);
+
+          room.proceedIfEveryoneIsReadyForNextRound();
+          break;
+        }
+
         case "vote_question": {
           const { vote } = data; // "good" or "bad"
+          if (vote !== "good" && vote !== "bad") return;
           const roomCode = ws.roomCode;
           const room = rooms.get(roomCode);
           if (!room || !room.currentQuestion) return;
@@ -138,14 +190,12 @@ wss.on("connection", (ws, req) => {
         }
 
         default:
-          ws.send(
-            JSON.stringify({ action: "error", message: "Unknown action." })
-          );
+          ws.send(JSON.stringify({ action: "error", code: "unknown_action" }));
       }
     } catch (err) {
       console.log(err);
       ws.send(
-        JSON.stringify({ action: "error", message: "Invalid message format." })
+        JSON.stringify({ action: "error", code: "invalid_message_format" })
       );
     }
   });
@@ -164,6 +214,7 @@ wss.on("connection", (ws, req) => {
           action: "player_left",
           message: "A player has left the room.",
         });
+        room.proceedAccordingToState();
       }
     }
   });
