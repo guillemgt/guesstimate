@@ -1,6 +1,7 @@
 let displayQuestion = function (question) {};
 let displayWaitingForAnswersScreen = function () {};
 let displayFeedbackScreen = function () {};
+let displayError = function (message) {};
 
 document.addEventListener("DOMContentLoaded", () => {
   // let gameClient = new OfflineGameClient();
@@ -21,6 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const foundExcerptElement = document.getElementById("found-excerpt");
   const nextQuestionBtn = document.getElementById("next-question-btn");
   const feedbackContainer = document.getElementById("feedback-container");
+  const feedbackButtonGood = document.getElementById("feedback-good-btn");
+  const feedbackButtonBad = document.getElementById("feedback-bad-btn");
   const inputContainer = document.getElementById("input-container");
   const canvas = document.getElementById("visualization-canvas");
   const context = canvas.getContext("2d");
@@ -59,10 +62,25 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   displayFeedbackScreen = function () {
+    feedbackButtonGood.classList.remove("clicked");
+    feedbackButtonBad.classList.remove("clicked");
+    feedbackButtonGood.classList.remove("notclicked");
+    feedbackButtonBad.classList.remove("notclicked");
+
     inputContainer.style.display = "none";
     watingForAnswersContainer.style.display = "none";
     resultContainer.style.display = "none";
     feedbackContainer.style.display = "flex";
+  };
+
+  displayError = function (message) {
+    loadingContainer.style.display = "none";
+    inputContainer.style.display = "none";
+    watingForAnswersContainer.style.display = "none";
+    resultContainer.style.display = "none";
+    feedbackContainer.style.display = "none";
+    document.getElementById("error-container").style.display = "block";
+    if (message) document.getElementById("error-message").textContent = message;
   };
 
   function toFixed_leq(x, n) {
@@ -424,6 +442,29 @@ document.addEventListener("DOMContentLoaded", () => {
     gameClient.handleNextQuestion()
   );
 
+  feedbackButtonGood.onclick = function () {
+    if (
+      this.classList.contains("clicked") ||
+      this.classList.contains("notclicked")
+    )
+      return;
+
+    feedbackButtonGood.classList.add("clicked");
+    feedbackButtonBad.classList.add("notclicked");
+    gameClient.voteQuestion("good");
+  };
+  feedbackButtonBad.onclick = function () {
+    if (
+      this.classList.contains("clicked") ||
+      this.classList.contains("notclicked")
+    )
+      return;
+
+    feedbackButtonGood.classList.add("notclicked");
+    feedbackButtonBad.classList.add("clicked");
+    gameClient.voteQuestion("bad");
+  };
+
   gameClient.onQuestionChecking = function (
     userAnswers,
     correctAnswer,
@@ -693,8 +734,14 @@ class OnlineGameClient extends GameClient {
         this.startNewGame();
       }
     };
-    this.socket.onclose = () => console.log("Disconnected from the server.");
-    this.socket.onerror = (error) => console.error("WebSocket error:", error);
+    this.socket.onclose = () => {
+      console.log("Disconnected from the server.");
+      displayError("Could not connect to the server.");
+    };
+    this.socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      displayError("Could not connect to the server.");
+    };
   }
 
   onMessage(event) {
@@ -734,7 +781,7 @@ class OnlineGameClient extends GameClient {
         switch (data.code) {
           case "room_not_found":
             this.removeRoomCodeFromURL();
-            // TODO: Display error message
+            displayError("Room not found.");
             break;
           default:
             break;
@@ -839,7 +886,7 @@ class OnlineGameClient extends GameClient {
         alert("Failed to copy " + modifiedUrl + " : ", err);
       });
 
-    this.putRoomCodeInURL();
+    // this.putRoomCodeInURL();
   }
 
   handleNextQuestion() {

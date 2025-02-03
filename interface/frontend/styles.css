@@ -16,7 +16,7 @@ body {
 }
 
 
-#question-container, #waiting-for-answers-container, #result-container, #feedback-container {
+#question-container, #waiting-for-answers-container, #result-container, #feedback-container, #error-container {
     margin-top: 20px;
     display: none;
 }

@@ -16,7 +16,7 @@ class Room {
   }
 
   startRound() {
-    const questionIndex = Math.floor(Math.random() * ALL_QUESTIONS.length);
+    const questionIndex = getRandomQuestionIndex();
     const question = ALL_QUESTIONS[questionIndex];
     this.currentQuestion = { question, index: questionIndex };
     this.answersThisRound = new Map();
@@ -80,7 +80,7 @@ class Room {
 
 // Load ALL_QUESTIONS from a JSON file at start-up
 const ALL_QUESTIONS = JSON.parse(fs.readFileSync("data.json", "utf8"));
-const GLOBAL_VOTES = ALL_QUESTIONS.map(() => ({ good: 0, bad: 0 }));
+const GLOBAL_VOTES = ALL_QUESTIONS.map(() => ({ good: 1, bad: 1 }));
 
 // Map to store room data
 const rooms = new Map();
@@ -132,6 +132,8 @@ wss.on("connection", (ws, req) => {
                   question: room.currentQuestion.question,
                 })
               );
+            } else if (room.state == "waiting_for_next_round") {
+              room.readyForNextRound.set(ws.uuid, true);
             }
           } else {
             ws.send(
@@ -204,8 +206,9 @@ wss.on("connection", (ws, req) => {
     const roomCode = ws.roomCode;
     if (roomCode && rooms.has(roomCode)) {
       const room = rooms.get(roomCode);
-      room.players.delete(ws);
-      room.answersThisRound.delete(ws);
+      room.players.delete(ws.uuid);
+      room.answersThisRound.delete(ws.uuid);
+      room.readyForNextRound.delete(ws.uuid);
 
       if (room.players.length === 0) {
         rooms.delete(roomCode);
@@ -245,6 +248,25 @@ function computeScores(player_answer, question) {
     scores.set(player, score);
   });
   return scores;
+}
+
+function getRandomQuestionIndex() {
+  const question_probablilities_unnormalized = GLOBAL_VOTES.map(
+    ({ good, bad }) => good / (good + bad)
+  );
+  const sum = question_probablilities_unnormalized.reduce((a, b) => a + b, 0);
+  const question_probablilities = question_probablilities_unnormalized.map(
+    (p) => p / sum
+  );
+
+  const random = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < question_probablilities.length; i++) {
+    cumulative += question_probablilities[i];
+    if (random < cumulative) {
+      return i;
+    }
+  }
 }
 
 server.listen(8080, () => {
