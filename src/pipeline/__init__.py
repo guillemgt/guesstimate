@@ -27,3 +27,5 @@ from pipeline.stage_7_remove_quantities_with_small_ints import (
     remove_quantities_with_small_ints,
 )
 from pipeline.stage_7_add_scale_metadata import add_scale_metadata
+
+from pipeline.stage_8_finalize import finalize

@@ -84,6 +84,7 @@ if __name__ == "__main__":
             pipeline.add_scale_metadata,
             model="gpt-4o-2024-11-20",  # May not be necessary...
         ),
+        pipeline.finalize,
     ]
 
     last_output_file = None
