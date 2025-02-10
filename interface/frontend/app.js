@@ -40,12 +40,12 @@ document.addEventListener("DOMContentLoaded", () => {
     questionContainer.style.display = "block";
 
     // topicElement.textContent = question.topic;
-    descriptionElement.textContent = question.description[0];
-    dateElement.innerHTML = question.description[1]
-      ? `${question.description[1]}`
+    descriptionElement.textContent = question.description.prompt;
+    dateElement.innerHTML = question.description.date
+      ? `${question.description.date}`
       : "";
-    unitElement.innerHTML = question.description[2]
-      ? `${question.description[2]}`
+    unitElement.innerHTML = question.description.units
+      ? `${question.description.units}`
       : "";
     userAnswerElement.value = "";
     inputContainer.style.display = "block";
@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return sign * (Math.log(k + x) - Math.log(k));
   }
 
-  function showVisualization(userAnswers, correctAnswer) {
+  function showVisualization(userAnswerData, correctAnswer) {
     const ideal_width = document.body.clientWidth > 800 ? 800 : 400;
     const ideal_height = 100;
     const ideal_padding = 10;
@@ -243,6 +243,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("resize", resizeCanvas);
 
     const correctAnswerIsInterval = typeof correctAnswer == "object";
+    const userAnswers = [];
+    for (let i = 0; i < userAnswerData.length; i++) {
+      userAnswers.push(userAnswerData[i].answer);
+    }
     const answers = userAnswers.concat(
       correctAnswerIsInterval ? [...correctAnswer] : [correctAnswer]
     );
@@ -386,7 +390,17 @@ document.addEventListener("DOMContentLoaded", () => {
         context.fillStyle = colors[i];
         context.textAlign = "center";
 
-        const labelText = displayNumber(answers[i]);
+        let labelText = displayNumber(answers[i]);
+        if (i < userAnswers.length) {
+          if (userAnswerData[i].player) {
+            labelText =
+              labelText +
+              "\n\n" +
+              userAnswerData[i].score +
+              "\n" +
+              userAnswerData[i].player;
+          }
+        }
         const lines = labelText.split("\n");
         const lineHeight = -fontSize;
         for (let j = lines.length - 1; j >= 0; j--) {
@@ -766,12 +780,7 @@ class OnlineGameClient extends GameClient {
         displayWaitingForAnswersScreen();
         break;
       case "round_scores":
-        console.log("Scores:", data.scores);
-        let userAnswers = [];
-        for (let i = 0; i < data.data.length; i++) {
-          userAnswers.push(data.data[i].answer);
-        }
-        this.onQuestionChecking(userAnswers, data.correct_answer, data.excerpt);
+        this.onQuestionChecking(data.data, data.correct_answer, data.excerpt);
         break;
       case "waiting_for_everyone_to_be_ready":
         displayFeedbackScreen();
@@ -964,7 +973,11 @@ class OfflineGameClient extends GameClient {
   submitAnswer(userAnswer) {
     const question = this.allQuestions[this.currentQuestionIndex];
     const correctAnswer = question.answer;
-    this.onQuestionChecking(userAnswer, correctAnswer, question.excerpt);
+    this.onQuestionChecking(
+      { answer: userAnswer },
+      correctAnswer,
+      question.excerpt
+    );
   }
 
   voteQuestion() {

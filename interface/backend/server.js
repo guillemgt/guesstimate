@@ -42,11 +42,12 @@ class Room {
         score: player_scores.get(player_uuid),
       })
     );
-
-    this.players.forEach((player) => {
-      const score = player_scores.get(player);
-      this.totalScores.set(player, this.totalScores.get(player) + score);
+    // Add scores
+    this.players.forEach((player, uuid) => {
+      const score = player_scores.get(uuid) || 0;
+      this.totalScores.set(uuid, (this.totalScores.get(uuid) || 0) + score);
     });
+    console.log(this.totalScores);
 
     broadcast(this.roomCode, {
       action: "round_scores",
@@ -240,12 +241,56 @@ function broadcast(roomCode, message) {
   }
 }
 
+function scale_independet_difference(a, b) {
+  return (50.0 * (a - b)) / (40.0 + Math.abs(a));
+}
+
 function computeScores(player_answer, question) {
   const scores = new Map();
+  const L = question["scale-interval"]["lower_bound"];
+  const U = question["scale-interval"]["upper_bound"];
   player_answer.forEach((answer, player) => {
-    const correct = question.correct_answer;
-    const score = answer === correct ? 1 : 0;
-    scores.set(player, score);
+    const correct = question.answer;
+
+    let score = 0;
+    if (L !== null) {
+      if (U === null) {
+        // For bounded-below questions, use a logarithmic penalty (scaled by the log of the answer)
+        const log_correct = Math.log(correct - L);
+        const log_answer = Math.log(answer - L);
+        const diff = scale_independet_difference(log_correct, log_answer);
+        const diff_sigmoid = 1 / (1 + Math.exp(-diff));
+        score = Math.max(0, 1 - Math.abs(1.0 - 2.0 * diff_sigmoid));
+        // console.log("log_correct", log_correct);
+        // console.log("log_answer", log_answer);
+        // console.log("diff", diff);
+        // console.log("diff_sigmoid", diff_sigmoid);
+        // console.log("score", score);
+      } else {
+        const correct_normalized = (correct - L) / (U - L);
+        const answer_normalized = (answer - L) / (U - L);
+
+        // If bounded on both sides, use a penalty that is approximately logarithmic if the answer is near the edges but approximately linear if not
+        const correct_logit = Math.log(
+          correct_normalized / (1 - correct_normalized)
+        );
+        const answer_logit = Math.log(
+          answer_normalized / (1 - answer_normalized)
+        );
+        const diff = scale_independet_difference(correct_logit, answer_logit);
+        const diff_sigmoid = 1 / (1 + Math.exp(-diff));
+        score = Math.max(0, 1 - Math.abs(1.0 - 2.0 * diff_sigmoid));
+
+        // console.log("correct_normalized", correct_normalized);
+        // console.log("answer_normalized", answer_normalized);
+        // console.log("correct_logit", correct_logit);
+        // console.log("answer_logit", answer_logit);
+        // console.log("diff", diff);
+        // console.log("diff_sigmoid", diff_sigmoid);
+        // console.log("score", score);
+      }
+    }
+    scores.set(player, parseInt(1000 * score));
   });
   return scores;
 }
