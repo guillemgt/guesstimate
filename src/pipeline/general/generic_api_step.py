@@ -110,6 +110,7 @@ def fetch_api_response_and_process_with_structured_outputs(
         endpoint="/v1/chat/completions",
         batch_call_id="filter_correct",
         max_tokens_per_batch=35_000_000,
+        max_requests_per_batch=20_000,
     )
     usage = Usage.from_openai_outputs(outputs)
     assert len(outputs) == len(user_prompts)

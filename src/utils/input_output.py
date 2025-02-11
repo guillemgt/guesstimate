@@ -3,7 +3,10 @@ import os
 
 
 def output_and_log_files(
-    output_file: str | None, log_file: str | None, pipeline_step: int = 0
+    output_file: str | None,
+    log_file: str | None,
+    pipeline_step: int = 0,
+    prefix: str = "",
 ) -> tuple[str, str]:
     name_of_caller_file = None
 
@@ -22,9 +25,13 @@ def output_and_log_files(
     assert name_of_caller_file is not None
 
     if output_file is None:
-        output_file = f"data/pipeline/{pipeline_step:02}_{name_of_caller_file}.json"
+        output_file = (
+            f"data/pipeline/{pipeline_step:02}{prefix}_{name_of_caller_file}.json"
+        )
     if log_file is None:
-        log_file = f"data/pipeline/logs/{pipeline_step:02}_{name_of_caller_file}.log"
+        log_file = (
+            f"data/pipeline/logs/{pipeline_step:02}{prefix}_{name_of_caller_file}.log"
+        )
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
 

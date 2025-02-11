@@ -2,7 +2,8 @@ import sys
 import os
 from dataclasses import dataclass, asdict
 import numpy as np
-from typing import Any, Callable
+from typing import Any
+import uuid
 
 from pydantic import BaseModel, Field
 from typing import Tuple, Union, Optional
@@ -18,21 +19,16 @@ from utils.input_output import output_and_log_files
 import json
 
 
-def generic_filter(
+GeneralizedKey = str | list[str] | list[tuple[str, float]]
+KeyWithThreshold = tuple[GeneralizedKey, float]
+
+
+def add_uuid(
     input_file: str,
-    filters: list[Callable[[dict], bool]],
     output_file: str | None = None,
     log_file: str | None = None,
     pipeline_step: int = 0,
 ) -> str:
-    """
-    Filters according to wether a linear combination of some keys is above a certain threshold.
-    filters can be:
-    - a tuple of a key and a threshold
-    - a tuple of a list of keys and a threshold (the keys are summed up)
-    - a tuple of a list of tuples of keys and weights and a threshold (the keys are linearly combined)
-    """
-
     output_file, log_file = output_and_log_files(output_file, log_file, pipeline_step)
     if os.path.exists(output_file):
         print(f"Output file {output_file} already exists.")
@@ -42,30 +38,11 @@ def generic_filter(
     with open(input_file, "r", encoding="utf-8") as f:
         questions = json.load(f)
 
-    filtered_questions = [
-        question
-        for question in questions
-        if all(filter_(question) for filter_ in filters)
-    ]
-
-    print("Number of original entries:", len(questions))
-    print("Number of filtered entries:", len(filtered_questions))
+    for question in questions:
+        question["uuid"] = uuid.uuid4().hex
 
     # Write the modified questions with found excerpts
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(filtered_questions, f, ensure_ascii=False, indent=1)
-
-    with open(
-        output_file.replace(".json", ".metadata.json"), "w", encoding="utf-8"
-    ) as f:
-        json.dump(
-            {
-                "entries_before": len(questions),
-                "entries_after": len(filtered_questions),
-            },
-            f,
-            ensure_ascii=False,
-            indent=4,
-        )
+        json.dump(questions, f, ensure_ascii=False, indent=1)
 
     return output_file
