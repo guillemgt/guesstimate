@@ -41,23 +41,24 @@ def format_question(question: dict) -> str:
             )
         )
 
-    if "single_value" in question["value"]:
-        modifier = question["value"]["modifier"]
+    value = question.get("rewritten-description", {}).get("answer", question["value"])
+    if "single_value" in value:
+        modifier = value["modifier"]
         modifier = (
             modifier
             if modifier
             in {SingleValueModifier.MORE_THAN, SingleValueModifier.LESS_THAN}
             else None
         )
-        value = question["value"]["value"]
-        unit = question["value"]["unit"]
+        the_value = value["value"]
+        unit = value["unit"]
         formatted_answer = " ".join(
-            str(x) for x in [modifier, value, unit] if x is not None
+            str(x) for x in [modifier, the_value, unit] if x is not None
         )
-    elif "interval" in question["value"]:
-        min_value = question["value"]["min_value"]
-        max_value = question["value"]["max_value"]
-        unit = question["value"]["unit"]
+    elif "interval" in value:
+        min_value = value["min_value"]
+        max_value = value["max_value"]
+        unit = value["unit"]
         formatted_value = f"between {min_value} and {max_value}"
         formatted_answer = " ".join(
             str(x) for x in [formatted_value, unit] if x is not None

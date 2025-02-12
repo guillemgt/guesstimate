@@ -11,13 +11,22 @@ from dotenv import load_dotenv
 
 from functools import partial
 from utils.input_output import output_and_log_files
+from pipeline.stage_4_mine_quantities import (
+    SingleValue,
+    IntervalValue,
+    SingleValueModifier,
+    IntervalModifier,
+)
 from pipeline.general.generic_api_step import (
     generic_api_processing_step,
     fetch_api_response_and_process_with_structured_outputs,
     fetch_api_response_and_process_with_logprobs,
 )
 
-SYSTEM_PROMPT = """You are helping design a game about estimating quantities. You will receive a topic, an excerpt and a preliminary description of a quanitity mentioned in the excerpt. Your task is to rewrite the the description as a prompt for the game, making it clear what quantity is to be estimated without seeing the topic or excerpt, and providing additional necessary information such as date and units of measurement; make sure this information is NOT included in the prompt. **The description should be clear enough that anyone would understand what they are being asked to estimate without seeing the topic or excerpt**."""
+SYSTEM_PROMPT = """You are helping design a game about estimating quantities. You will receive a topic, an excerpt and a preliminary description of a quanitity mentioned in the excerpt, as well as a preferred unit for the quantity.
+ Your task is to rewrite the the description as a prompt for the game, making it clear what quantity is to be estimated without seeing the topic or excerpt, with additional necessary information such as date and units of measurement.
+ Make sure this information is NOT included in the "prompt" field: when concatenating the "prompt", "date" and "units" fields, the resulting text should be a normal, full sentence.
+ **The description should be clear enough that anyone would understand what they are being asked to estimate without seeing the topic or excerpt**."""
 
 
 class EstimationPrompt(BaseModel):
@@ -32,6 +41,10 @@ class EstimationPrompt(BaseModel):
     units: str | None = Field(
         ...,
         description='Measurement units, beginning with "in ", e.g. "in kg". If the quantity has no units, set to null.',
+    )
+    answer: Union[SingleValue, IntervalValue] = Field(
+        ...,
+        description="Value of the quantity, depending on its type (single value or interval)",
     )
 
 
@@ -58,6 +71,12 @@ EXAMPLES = [
             prompt="Estimate how long humans have been cooking over open fires",
             date=None,
             units="in years",
+            answer=SingleValue(
+                single_value=True,
+                modifier=SingleValueModifier.APPROXIMATELY,
+                unit="years",
+                value=2_000_000,
+            ),
         ),
     },
     # {
@@ -83,6 +102,12 @@ EXAMPLES = [
             prompt="Estimate the number of lives cats are believed to have in Italy and Germany",
             date=None,
             units=None,
+            answer=SingleValue(
+                single_value=True,
+                modifier=SingleValueModifier.EXACTLY,
+                unit=None,
+                value=7,
+            ),
         ),
     },
     {
@@ -96,6 +121,12 @@ EXAMPLES = [
             prompt="Estimate the total amount of plastic produced",
             date="between 1950 and 2017",
             units="in metric tons",
+            answer=SingleValue(
+                single_value=True,
+                modifier=SingleValueModifier.APPROXIMATELY,
+                unit="metric tons",
+                value=9_200_000_000,
+            ),
         ),
     },
     # {
@@ -145,6 +176,12 @@ EXAMPLES = [
             prompt="Estimate the length of the longest river in Sweden",
             date=None,
             units="in km",
+            answer=SingleValue(
+                single_value=True,
+                modifier=SingleValueModifier.EXACTLY,
+                unit="km",
+                value=1_160,
+            ),
         ),
     },
     {
@@ -158,6 +195,13 @@ EXAMPLES = [
             prompt="Estimate the average period of gestation in giant pandas",
             date=None,
             units="in days",
+            answer=IntervalValue(
+                interval=True,
+                modifier=IntervalModifier.APPROXIMATELY,
+                unit="days",
+                min_value=95,
+                max_value=160,
+            ),
         ),
     },
     # {
@@ -185,7 +229,12 @@ def make_input_human_readable(question, include_units=False):
 
 ## Description
 {question["description"]}""" + (
-        "" if not include_units else f"""\n\n## Units\n{question['value']['unit']}"""
+        ""
+        if not include_units
+        or "value" not in question
+        or "unit" not in question["value"]
+        or question["value"]["unit"] is None
+        else f"""\n\n## Preferred units\n{question['value']['unit']}"""
     )
 
 
@@ -195,7 +244,7 @@ def rewrite_description(
     log_file: str | None = None,
     pipeline_step: int = 0,
     model="gpt-4o-mini",
-    include_units: bool = False,
+    include_units: bool = True,
 ) -> str:
 
     output_file, log_file = output_and_log_files(output_file, log_file, pipeline_step)

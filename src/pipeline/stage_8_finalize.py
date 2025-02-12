@@ -17,6 +17,7 @@ def finalize(
     output_file: str | None = None,
     log_file: str | None = None,
     pipeline_step: int = 0,
+    use_handwritten_filter: bool = False,
 ) -> str:
 
     output_file, log_file = output_and_log_files(output_file, log_file, pipeline_step)
@@ -41,6 +42,8 @@ def finalize(
             "scale-interval": question["scale-interval"],
         }
         for question in questions
+        if not use_handwritten_filter
+        or question["scale-interval"]["lower_bound"] is not None
     ]
 
     # Write the final questions to the output file

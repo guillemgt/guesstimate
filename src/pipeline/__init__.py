@@ -13,6 +13,9 @@ from pipeline.stage_4_mine_quantities import mine_quantities
 
 from pipeline.stage_5_find_excerpts import find_excerpts
 
+from pipeline.general.add_uuid import add_uuid
+from pipeline.general.parallelize import parallelize
+
 from pipeline.stage_6_rewrite_description import rewrite_description
 from pipeline.stage_6_filter_clarity import filter_clear, ClarityType
 from pipeline.stage_6_filter_correct import filter_correct

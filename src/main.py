@@ -30,43 +30,48 @@ if __name__ == "__main__":
         pipeline.download_wikipedia_pages,
         pipeline.mine_quantities,
         pipeline.find_excerpts,
+        pipeline.deduplicate,
+        pipeline.add_uuid,
         pipeline.rewrite_description,
         partial(
-            pipeline.filter_clear,
-            task=pipeline.ClarityType.NoTechnicalTerms,
-            logprob_threshold=-np.inf,
+            pipeline.parallelize,
+            stages=[
+                partial(
+                    pipeline.filter_clear,
+                    task=pipeline.ClarityType.NoTechnicalTerms,
+                    logprob_threshold=-np.inf,
+                ),
+                partial(
+                    pipeline.filter_clear,
+                    task=pipeline.ClarityType.MakesSenseWithoutContext,
+                    logprob_threshold=-np.inf,
+                ),
+                partial(
+                    pipeline.filter_clear,
+                    task=pipeline.ClarityType.MakesSense,
+                    logprob_threshold=-np.inf,
+                ),
+                partial(
+                    pipeline.filter_clear,
+                    task=pipeline.ClarityType.OverallClear,
+                    logprob_threshold=-np.inf,
+                ),
+                partial(
+                    pipeline.filter_clear,
+                    task=pipeline.ClarityType.TryToAnswer,
+                    logprob_threshold=-np.inf,
+                ),
+            ],
         ),
-        partial(
-            pipeline.filter_clear,
-            task=pipeline.ClarityType.MakesSenseWithoutContext,
-            logprob_threshold=-np.inf,
-        ),
-        partial(
-            pipeline.filter_clear,
-            task=pipeline.ClarityType.MakesSense,
-            logprob_threshold=-np.inf,
-        ),
-        partial(
-            pipeline.filter_clear,
-            task=pipeline.ClarityType.OverallClear,
-            logprob_threshold=-np.inf,
-        ),
-        partial(
-            pipeline.filter_clear,
-            task=pipeline.ClarityType.TryToAnswer,
-            logprob_threshold=-np.inf,
-        ),
-        pipeline.deduplicate,  # Should have done this before...
         partial(
             pipeline.generic_filter,
             filters=[
-                ("logprob-clarity-NoTechnicalTerms", -10.0),
-                ("logprob-clarity-MakesSense", -5.0),
-                ("logprob-clarity-TryToAnswer", -12.0),
-                ("logprob-clarity-OverallClear", -0.001),
-                ([("logprob-clarity-TryToAnswer", -1.0)], 1e-10),
+                (lambda x: x["logprob-clarity-NoTechnicalTerms"] > -9.0),
+                (lambda x: x["logprob-clarity-MakesSense"] > -5.0),
+                (lambda x: x.get("logprob-clarity-TryToAnswer", -999.0) > -12.0),
+                (lambda x: x["logprob-clarity-OverallClear"] > -0.001),
+                (lambda x: x.get("logprob-clarity-TryToAnswer", 0.0) < -1e-10),
             ],
-            ignore_zeros=True,
         ),
         partial(
             pipeline.filter_clear,
@@ -84,7 +89,10 @@ if __name__ == "__main__":
             pipeline.add_scale_metadata,
             model="gpt-4o-2024-11-20",  # May not be necessary...
         ),
-        pipeline.finalize,
+        partial(
+            pipeline.finalize,
+            use_handwritten_filter=True,
+        ),
     ]
 
     last_output_file = None
