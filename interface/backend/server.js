@@ -47,7 +47,6 @@ class Room {
       const score = player_scores.get(uuid) || 0;
       this.totalScores.set(uuid, (this.totalScores.get(uuid) || 0) + score);
     });
-    console.log(this.totalScores);
 
     broadcast(this.roomCode, {
       action: "round_scores",
@@ -241,57 +240,182 @@ function broadcast(roomCode, message) {
   }
 }
 
+// ============================================================================
+//  Scores
+// ============================================================================
+
+/*
+Principles:
+1. First map everything into quantities that can take any real values:
+  - unbounded -> unchanged
+  - bounded on one side -> do log from the bound
+  - bounded on both sides -> do logit transformation
+2. Normalize so that the average standard deviation across all questions
+3. Normalize Bayesian-ly according to the question
+*/
+
+let SCORE_GLOBAL_NORMALIZATION_CONSTANTS = {
+  "[]": 1.0,
+  "[)": 1.0,
+  "(]": 1.0,
+  "()": 1.0,
+};
+
+function update_score_global_normalization_constants() {
+  const alpha = 1;
+  const beta = 1.0;
+
+  let sum_of_squares = {
+    "[]": 0.0,
+    "[)": 0.0,
+    "(]": 0.0,
+    "()": 0.0,
+  };
+  let num_samples = {
+    "[]": 0,
+    "[)": 0,
+    "(]": 0,
+    "()": 0,
+  };
+  for (let question of ALL_QUESTIONS) {
+    const L = question["scale-interval"]["lower_bound"];
+    const U = question["scale-interval"]["upper_bound"];
+
+    const answer_transformed = transform_according_to_LU(
+      question.answer,
+      L,
+      U,
+      false
+    );
+    const bound_type =
+      L === null ? (U === null ? "()" : "(]") : U === null ? "[)" : "[]";
+    if (!isNaN(answer_transformed)) {
+      sum_of_squares[bound_type] += answer_transformed * answer_transformed;
+      num_samples[bound_type]++;
+    }
+  }
+
+  for (let bound_type in SCORE_GLOBAL_NORMALIZATION_CONSTANTS) {
+    SCORE_GLOBAL_NORMALIZATION_CONSTANTS[bound_type] = Math.sqrt(
+      (sum_of_squares[bound_type] + alpha * beta * beta) /
+        (num_samples[bound_type] + alpha)
+    );
+  }
+  console.log("Normalization constants:", SCORE_GLOBAL_NORMALIZATION_CONSTANTS);
+}
+update_score_global_normalization_constants();
+
 function scale_independet_difference(a, b) {
   return (50.0 * (a - b)) / (40.0 + Math.abs(a));
 }
 
-function computeScores(player_answer, question) {
-  const scores = new Map();
+function logit(x) {
+  return Math.log(x / (1 - x));
+}
+
+function transform_according_to_LU(x, L, U, normalize = true) {
+  if (L !== null) {
+    if (U === null) {
+      return (
+        Math.log(x - L) /
+        (normalize ? SCORE_GLOBAL_NORMALIZATION_CONSTANTS["[)"] : 1.0)
+      );
+    } else {
+      const x_normalized = (x - L) / (U - L);
+      return (
+        logit(x_normalized) /
+        (normalize ? SCORE_GLOBAL_NORMALIZATION_CONSTANTS["[]"] : 1.0)
+      );
+    }
+  } else {
+    if (U === null) {
+      return x / (normalize ? SCORE_GLOBAL_NORMALIZATION_CONSTANTS["()"] : 1.0);
+    } else {
+      return (
+        Math.log(U - x) /
+        (normalize ? SCORE_GLOBAL_NORMALIZATION_CONSTANTS["(]"] : 1.0)
+      );
+    }
+  }
+}
+
+function compute_std_bayesian_posterior(samples) {
+  const prior_estimate = 1.0;
+  const prior_strength = 2;
+
+  let sum_of_squares = 0;
+  let num_samples = 0;
+  for (let sample of samples) {
+    if (!isNaN(sample)) {
+      sum_of_squares += sample * sample;
+      num_samples += 1;
+    }
+  }
+
+  return Math.sqrt(
+    (sum_of_squares + prior_strength * prior_estimate * prior_estimate) /
+      (num_samples + prior_strength)
+  );
+}
+
+function normalCDF(x) {
+  // Abramowitz and Stegun approximation for normal CDF
+  const a1 = 0.254829592,
+    a2 = -0.284496736,
+    a3 = 1.421413741;
+  const a4 = -1.453152027,
+    a5 = 1.061405429;
+  const p = 0.3275911;
+
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x) / Math.SQRT2;
+
+  const t = 1 / (1 + p * x);
+  const erf =
+    1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+  return 0.5 * (1 + sign * erf);
+}
+
+function normalSurvivalProbability(x) {
+  return Math.max(0.0, Math.min(1.0, 2 * (1 - normalCDF(Math.abs(x)))));
+}
+
+function computeScores(player_answers, question) {
   const L = question["scale-interval"]["lower_bound"];
   const U = question["scale-interval"]["upper_bound"];
-  player_answer.forEach((answer, player) => {
-    const correct = question.answer;
+  const correct = question.answer;
 
-    let score = 0;
-    if (L !== null) {
-      if (U === null) {
-        // For bounded-below questions, use a logarithmic penalty (scaled by the log of the answer)
-        const log_correct = Math.log(correct - L);
-        const log_answer = Math.log(answer - L);
-        const diff = scale_independet_difference(log_correct, log_answer);
-        const diff_sigmoid = 1 / (1 + Math.exp(-diff));
-        score = Math.max(0, 1 - Math.abs(1.0 - 2.0 * diff_sigmoid));
-        // console.log("log_correct", log_correct);
-        // console.log("log_answer", log_answer);
-        // console.log("diff", diff);
-        // console.log("diff_sigmoid", diff_sigmoid);
-        // console.log("score", score);
-      } else {
-        const correct_normalized = (correct - L) / (U - L);
-        const answer_normalized = (answer - L) / (U - L);
+  console.log("-------");
 
-        // If bounded on both sides, use a penalty that is approximately logarithmic if the answer is near the edges but approximately linear if not
-        const correct_logit = Math.log(
-          correct_normalized / (1 - correct_normalized)
-        );
-        const answer_logit = Math.log(
-          answer_normalized / (1 - answer_normalized)
-        );
-        const diff = scale_independet_difference(correct_logit, answer_logit);
-        const diff_sigmoid = 1 / (1 + Math.exp(-diff));
-        score = Math.max(0, 1 - Math.abs(1.0 - 2.0 * diff_sigmoid));
+  let correct_transformed = transform_according_to_LU(correct, L, U);
+  let answers_transformed = new Map();
+  for (let [player, answer] of player_answers.entries()) {
+    answers_transformed.set(player, transform_according_to_LU(answer, L, U));
+  }
+  console.log(correct_transformed, answers_transformed);
 
-        // console.log("correct_normalized", correct_normalized);
-        // console.log("answer_normalized", answer_normalized);
-        // console.log("correct_logit", correct_logit);
-        // console.log("answer_logit", answer_logit);
-        // console.log("diff", diff);
-        // console.log("diff_sigmoid", diff_sigmoid);
-        // console.log("score", score);
-      }
-    }
-    scores.set(player, parseInt(1000 * score));
-  });
+  const normalization_constant = compute_std_bayesian_posterior([
+    correct_transformed,
+    ...answers_transformed.values(),
+  ]);
+
+  let answers_normalized = new Map();
+  for (let [player, transformed] of answers_transformed.entries()) {
+    answers_normalized.set(
+      player,
+      (transformed - correct_transformed) / normalization_constant
+    );
+  }
+  console.log(normalization_constant, answers_normalized);
+
+  let scores = new Map();
+  for (let [player, normalized] of answers_normalized.entries()) {
+    scores.set(
+      player,
+      Math.round(1000 * normalSurvivalProbability(4.0 * normalized))
+    );
+  }
   return scores;
 }
 
