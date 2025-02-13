@@ -40,6 +40,18 @@ h1 {
     font-size: 2.5em;
     color: #b00;
     margin-bottom: 0;
+    height: 148px;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+h1 span {
+    max-height: 96px;
+    height: 96px;
+    display: inline-block;
+    overflow: visible;
 }
 
 #description {

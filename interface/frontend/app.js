@@ -28,6 +28,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const canvas = document.getElementById("visualization-canvas");
   const context = canvas.getContext("2d");
 
+  anime({
+    targets: "h1 span",
+    fontSize: [0, 96],
+    easing: "easeOutElastic(1, .6)",
+    // duration: 300,
+    delay: function (el, i, l) {
+      return i * 100;
+    },
+  });
+
   // Seeding
   document
     .getElementById("shareButton")
