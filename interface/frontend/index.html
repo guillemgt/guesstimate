@@ -13,24 +13,24 @@
 <body>
   <div id="app">
     <h1><span>G</span><span>u</span><span>e</span><span>s</span><span>s</span><span>t</span><span>i</span><span>m</span><span>a</span><span>t</span><span>e</span></h1>
-    <div id="loading-container">
+    <div id="loading-container" class="shown-screen">
     </div>
     <div id="question-container">
       <!--<p><strong>Topic:</strong> <span id="topic"></span></p>-->
       <p><span id="description"></span></p> 
       <p><span id="date"></span></p>
       <p><span id="unit"></span></p>
-      <div id="input-container">
-        <input type="input" id="user-answer" placeholder="">
-        <br>
-        <button id="submit-btn">Guess</button>
-      </div>
+    </div>
+    <div id="input-container">
+      <input type="input" id="user-answer" placeholder="">
+      <br>
+      <button id="submit-btn">Guess</button>
     </div>
     <div id="waiting-for-answers-container">
       <br>
       <h2>Waiting for other players to guess...</h2>
     </div>
-    <div id="result-container" style="display: none;">
+    <div id="result-container">
       <div id="visualization">
         <canvas id="visualization-canvas"></canvas>
       </div>
@@ -51,7 +51,11 @@
       <span id="error-message"></span>
       <p>Try refreshing the page.</p>
     </div>
-    <button id="shareButton">Copy game link</button>
+    <button id="shareButton">Play with others</button>
+    <!-- <dialog>
+      Players in this device:<br/>
+      <input class="playerNameInput" placeholder="Write to add a player"/>
+    </dialog> -->
   </div>
   <script src="https://cdn.jsdelivr.net/npm/pako/dist/pako.min.js"></script><!--gzip-->
   <script src="app.js"></script>

@@ -16,8 +16,10 @@ body {
 }
 
 
-#question-container, #waiting-for-answers-container, #result-container, #feedback-container, #error-container {
+#loading-container, #question-container, #input-container, #waiting-for-answers-container, #result-container, #feedback-container, #error-container {
     margin-top: 20px;
+}
+#loading-container:not(.shown-screen), #question-container:not(.shown-screen), #input-container:not(.shown-screen), #waiting-for-answers-container:not(.shown-screen), #result-container:not(.shown-screen), #feedback-container:not(.shown-screen), #error-container:not(.shown-screen) {
     display: none;
 }
 

@@ -250,8 +250,10 @@ Principles:
   - unbounded -> unchanged
   - bounded on one side -> do log from the bound
   - bounded on both sides -> do logit transformation
-2. Normalize so that the average standard deviation across all questions
-3. Normalize Bayesian-ly according to the question
+2. Normalize so that the average standard deviation across all questions is 1.
+2. Take the difference between player's answers and the correct one.
+3. Normalize with a Bayesian approximation of the standard deviation for this question, so that it becomes 1.
+4. After being thus normalized, we assume the answer distribution follows a standard Gaussian. The score is the probability that a random guess sampled fdrom this distribution was worse than the player's guess (on average this is 1/2).
 */
 
 let SCORE_GLOBAL_NORMALIZATION_CONSTANTS = {
@@ -304,10 +306,6 @@ function update_score_global_normalization_constants() {
   console.log("Normalization constants:", SCORE_GLOBAL_NORMALIZATION_CONSTANTS);
 }
 update_score_global_normalization_constants();
-
-function scale_independet_difference(a, b) {
-  return (50.0 * (a - b)) / (40.0 + Math.abs(a));
-}
 
 function logit(x) {
   return Math.log(x / (1 - x));
@@ -391,21 +389,20 @@ function computeScores(player_answers, question) {
   let correct_transformed = transform_according_to_LU(correct, L, U);
   let answers_transformed = new Map();
   for (let [player, answer] of player_answers.entries()) {
-    answers_transformed.set(player, transform_according_to_LU(answer, L, U));
+    answers_transformed.set(
+      player,
+      transform_according_to_LU(answer, L, U) - correct_transformed
+    );
   }
   console.log(correct_transformed, answers_transformed);
 
   const normalization_constant = compute_std_bayesian_posterior([
-    correct_transformed,
     ...answers_transformed.values(),
   ]);
 
   let answers_normalized = new Map();
   for (let [player, transformed] of answers_transformed.entries()) {
-    answers_normalized.set(
-      player,
-      (transformed - correct_transformed) / normalization_constant
-    );
+    answers_normalized.set(player, transformed / normalization_constant);
   }
   console.log(normalization_constant, answers_normalized);
 
@@ -413,7 +410,7 @@ function computeScores(player_answers, question) {
   for (let [player, normalized] of answers_normalized.entries()) {
     scores.set(
       player,
-      Math.round(1000 * normalSurvivalProbability(4.0 * normalized))
+      Math.round(1000 * normalSurvivalProbability(2.0 * normalized))
     );
   }
   return scores;

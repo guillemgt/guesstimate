@@ -4,9 +4,6 @@ let displayFeedbackScreen = function () {};
 let displayError = function (message) {};
 
 document.addEventListener("DOMContentLoaded", () => {
-  // let gameClient = new OfflineGameClient();
-  let gameClient = new OnlineGameClient("http://localhost:8080");
-
   // const topicElement = document.getElementById('topic');
   const loadingContainer = document.getElementById("loading-container");
   const questionContainer = document.getElementById("question-container");
@@ -25,18 +22,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const feedbackButtonGood = document.getElementById("feedback-good-btn");
   const feedbackButtonBad = document.getElementById("feedback-bad-btn");
   const inputContainer = document.getElementById("input-container");
+  const errorContainer = document.getElementById("error-container");
   const canvas = document.getElementById("visualization-canvas");
   const context = canvas.getContext("2d");
 
   anime({
     targets: "h1 span",
-    fontSize: [0, 96],
+    scale: [0, 1],
     easing: "easeOutElastic(1, .6)",
     // duration: 300,
     delay: function (el, i, l) {
       return i * 100;
     },
   });
+
+  // let gameClient = new OfflineGameClient();
+  let gameClient = new OnlineGameClient(
+    "ws://" + window.location.hostname + ":8080"
+  );
 
   // Seeding
   document
@@ -45,52 +48,125 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Questions
 
-  displayQuestion = function (question) {
-    loadingContainer.style.display = "none";
-    questionContainer.style.display = "block";
+  let leftover_animations = [];
 
-    // topicElement.textContent = question.topic;
-    descriptionElement.textContent = question.description.prompt;
-    dateElement.innerHTML = question.description.date
-      ? `${question.description.date}`
-      : "";
-    unitElement.innerHTML = question.description.units
-      ? `${question.description.units}`
-      : "";
-    userAnswerElement.value = "";
-    inputContainer.style.display = "block";
-    watingForAnswersContainer.style.display = "none";
-    resultContainer.style.display = "none";
-    feedbackContainer.style.display = "none";
+  function showNewScreen(start_fn, changer_fn, also_change_question = false) {
+    leftover_animations.push([start_fn, changer_fn, also_change_question]);
+    if (leftover_animations.length > 1) {
+      return;
+    }
+    _showNewScreen(start_fn, changer_fn, also_change_question);
+  }
+  function _showNewScreen(start_fn, changer_fn, also_change_question) {
+    console.log(start_fn);
+    start_fn();
+
+    let question_description_exception = ":not(#question-container)";
+    if (also_change_question) {
+      questionContainer.classList.add("future-shown-screen");
+      question_description_exception = "";
+    }
+    let animation = anime.timeline({
+      duration: 750,
+    });
+    animation
+      .add({
+        targets: ".shown-screen" + question_description_exception,
+        translateX: [0, window.innerWidth],
+        easing: "easeInElastic(1, .6)",
+        complete: function (anim) {
+          console.log("--------------");
+          for (let element of [
+            ...(also_change_question ? [questionContainer] : []),
+            ...[
+              loadingContainer,
+              inputContainer,
+              watingForAnswersContainer,
+              resultContainer,
+              feedbackContainer,
+              errorContainer,
+            ],
+          ]) {
+            if (element.classList.contains("future-shown-screen")) {
+              console.log("showing", element.id);
+              element.classList.remove("future-shown-screen");
+              element.classList.add("shown-screen");
+            } else {
+              console.log("hiding", element.id);
+              element.classList.remove("shown-screen");
+            }
+          }
+
+          changer_fn();
+        },
+      })
+      .add({
+        targets: ".future-shown-screen" + question_description_exception,
+        translateX: [-window.innerWidth, 0],
+        easing: "easeOutElastic(1, .6)",
+        complete: function () {
+          leftover_animations.shift();
+          if (leftover_animations.length > 0) {
+            _showNewScreen(...leftover_animations[0]);
+          }
+        },
+      });
+  }
+
+  displayQuestion = function (question) {
+    showNewScreen(
+      function () {
+        inputContainer.classList.add("future-shown-screen");
+      },
+      function () {
+        descriptionElement.textContent = question.description.prompt;
+        dateElement.innerHTML = question.description.date
+          ? `${question.description.date}`
+          : "";
+        unitElement.innerHTML = question.description.units
+          ? `${question.description.units}`
+          : "";
+        userAnswerElement.value = "";
+      },
+      true
+    );
   };
 
   displayWaitingForAnswersScreen = function () {
-    inputContainer.style.display = "none";
-    watingForAnswersContainer.style.display = "block";
-    resultContainer.style.display = "none";
-    feedbackContainer.style.display = "none";
+    showNewScreen(
+      function () {
+        watingForAnswersContainer.classList.add("future-shown-screen");
+      },
+      function () {}
+    );
   };
 
   displayFeedbackScreen = function () {
-    feedbackButtonGood.classList.remove("clicked");
-    feedbackButtonBad.classList.remove("clicked");
-    feedbackButtonGood.classList.remove("notclicked");
-    feedbackButtonBad.classList.remove("notclicked");
-
-    inputContainer.style.display = "none";
-    watingForAnswersContainer.style.display = "none";
-    resultContainer.style.display = "none";
-    feedbackContainer.style.display = "flex";
+    showNewScreen(
+      function () {
+        feedbackContainer.classList.add("future-shown-screen");
+      },
+      function () {
+        feedbackButtonGood.classList.remove("clicked");
+        feedbackButtonBad.classList.remove("clicked");
+        feedbackButtonGood.classList.remove("notclicked");
+        feedbackButtonBad.classList.remove("notclicked");
+      }
+    );
   };
 
   displayError = function (message) {
-    loadingContainer.style.display = "none";
-    inputContainer.style.display = "none";
-    watingForAnswersContainer.style.display = "none";
-    resultContainer.style.display = "none";
-    feedbackContainer.style.display = "none";
-    document.getElementById("error-container").style.display = "block";
-    if (message) document.getElementById("error-message").textContent = message;
+    showNewScreen(
+      function () {
+        errorContainer.classList.add("future-shown-screen");
+      },
+      function () {
+        questionContainer.classList.remove("shown-screen");
+        if (message)
+          document.getElementById("error-message").textContent = message;
+      },
+      true
+    );
   };
 
   function toFixed_leq(x, n) {
@@ -494,12 +570,15 @@ document.addEventListener("DOMContentLoaded", () => {
     correctAnswer,
     excerpt
   ) {
-    foundExcerptElement.textContent = excerpt;
-    inputContainer.style.display = "none";
-    watingForAnswersContainer.style.display = "none";
-    resultContainer.style.display = "block";
-    feedbackContainer.style.display = "none";
-    showVisualization(userAnswers, correctAnswer);
+    showNewScreen(
+      function () {
+        resultContainer.classList.add("future-shown-screen");
+      },
+      function () {
+        foundExcerptElement.textContent = excerpt;
+        showVisualization(userAnswers, correctAnswer);
+      }
+    );
   };
 });
 
