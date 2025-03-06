@@ -27,23 +27,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let animationEngine = new AnimationEngine(canvas);
 
-  document.getElementById("debugScoreDisplay").onclick = function () {
-    let userAnswers = [
-      { answer: 100, player: "Player 1", score: 100 },
-      { answer: 200, player: "Player 2", score: 200 },
-      { answer: 300, player: "Player 3", score: 300 },
-    ];
-    let correctAnswer = [150, 250];
-    showNewScreen(
-      function () {
-        resultContainer.classList.add("future-shown-screen");
-      },
-      function () {
-        foundExcerptElement.textContent = "This is the excerpt";
-        animationEngine.showVisualization(userAnswers, correctAnswer);
-      }
-    );
-  };
+  // document.getElementById("debugScoreDisplay").onclick = function () {
+  //   let userAnswers = [
+  //     { answer: 95, player: "Player 0", score: 95 },
+  //     { answer: 100, player: "Player 1", score: 100 },
+  //     { answer: 200, player: "Guillem Tarrach", score: 200 },
+  //     { answer: 300, player: "Player 3", score: 300 },
+  //   ];
+  //   let correctAnswer = [150, 250];
+  //   showNewScreen(
+  //     function () {
+  //       resultContainer.classList.add("future-shown-screen");
+  //     },
+  //     function () {
+  //       foundExcerptElement.textContent = "This is the excerpt";
+  //       animationEngine.showVisualization(userAnswers, correctAnswer);
+  //     }
+  //   );
+  // };
 
   anime({
     targets: "h1 span",
@@ -914,13 +915,15 @@ class AnimationEngine {
     const self = this;
 
     const ideal_width = document.body.clientWidth > 800 ? 800 : 400;
-    const ideal_height = 100;
-    const ideal_padding = 10;
+    const ideal_height = 200;
+    const ideal_margin = 10;
     const ideal_x_offset = 50;
+    const axisY = 150;
 
     let width = ideal_width;
     let height = ideal_height;
-    let padding = ideal_padding;
+    let margin = ideal_margin;
+    let padding = 10;
     let global_scale = 1.0;
     let x_offset = ideal_x_offset;
     let effective_width = width - 2 * x_offset;
@@ -933,7 +936,7 @@ class AnimationEngine {
       width = Math.min(document.body.clientWidth, ideal_width);
       global_scale = width / ideal_width;
       height = ideal_height * global_scale;
-      padding = ideal_padding * global_scale;
+      margin = ideal_margin * global_scale;
       x_offset = ideal_x_offset * global_scale;
       effective_width = width - 2 * x_offset;
 
@@ -1028,8 +1031,8 @@ class AnimationEngine {
 
       // Redraw line
       context.beginPath();
-      context.moveTo(0, height / 2);
-      context.lineTo(width, height / 2);
+      context.moveTo(0, axisY);
+      context.lineTo(width, axisY);
       context.strokeStyle = "black";
       context.lineWidth = 2;
       context.stroke();
@@ -1044,8 +1047,8 @@ class AnimationEngine {
 
         // Draw tick line
         context.beginPath();
-        context.moveTo(x_offset + x, height / 2 - padding);
-        context.lineTo(x_offset + x, height / 2 + padding);
+        context.moveTo(x_offset + x, axisY - margin);
+        context.lineTo(x_offset + x, axisY + margin);
         context.strokeStyle = "black";
         context.lineWidth = 1;
         context.stroke();
@@ -1075,7 +1078,7 @@ class AnimationEngine {
             context.fillText(
               lines[j],
               x_offset + x,
-              height / 2 + 2 * padding + j * lineHeight
+              axisY + 2 * margin + j * lineHeight
             );
           }
           lastX = x + tickLabelWidth / 2;
@@ -1087,7 +1090,7 @@ class AnimationEngine {
         let x =
           (effective_width * (answersX[i] - origMinX)) / (origMaxX - origMinX);
         context.beginPath();
-        context.arc(x_offset + x, height / 2, 5, 0, 2 * Math.PI);
+        context.arc(x_offset + x, axisY, 5, 0, 2 * Math.PI);
         context.fillStyle = colors[i];
         context.fill();
 
@@ -1103,6 +1106,7 @@ class AnimationEngine {
               labelText +
               "\n\n" +
               userAnswerData[i].score +
+              " pts" +
               "\n" +
               userAnswerData[i].player;
           }
@@ -1119,12 +1123,38 @@ class AnimationEngine {
         }
         let textHeight = -lines.length * lineHeight;
         let textX = x_offset + x;
-        let textY = height / 2 - 2 * padding - textHeight;
+        let textY = axisY - 2 * margin - textHeight;
         context.fillStyle = "white";
         context.strokeStyle = colors[i];
         context.lineWidth = 2;
-        context.fillRect(textX - textWidth / 2, textY, textWidth, textHeight);
-        context.strokeRect(textX - textWidth / 2, textY, textWidth, textHeight);
+        // Draw comic dialog box
+        const pointerWidth = margin;
+        const pointerX = textX;
+        const pointerY = axisY;
+
+        context.beginPath();
+        context.moveTo(textX - textWidth / 2 - padding, textY - padding);
+        context.lineTo(textX + textWidth / 2 + padding, textY - padding);
+        context.lineTo(
+          textX + textWidth / 2 + padding,
+          textY + textHeight + padding
+        );
+        context.lineTo(
+          pointerX + pointerWidth / 2,
+          textY + textHeight + padding
+        );
+        context.lineTo(pointerX, pointerY);
+        context.lineTo(
+          pointerX - pointerWidth / 2,
+          textY + textHeight + padding
+        );
+        context.lineTo(
+          textX - textWidth / 2 - padding,
+          textY + textHeight + padding
+        );
+        context.closePath();
+        context.fill();
+        context.stroke();
         context.lineWidth = 1;
         context.fillStyle = colors[i];
 
@@ -1133,7 +1163,7 @@ class AnimationEngine {
           context.fillText(
             lines[j],
             x_offset + x,
-            height / 2 - 2 * padding + j * lineHeight
+            axisY - 2 * margin + j * lineHeight
           );
         }
       }
@@ -1145,13 +1175,13 @@ class AnimationEngine {
           x_offset +
             (effective_width * (answersX[answersX.length - 2] - origMinX)) /
               (origMaxX - origMinX),
-          height / 2
+          axisY
         );
         context.lineTo(
           x_offset +
             (effective_width * (answersX[answersX.length - 1] - origMinX)) /
               (origMaxX - origMinX),
-          height / 2
+          axisY
         );
         context.strokeStyle = colors[answersX.length - 1];
         context.lineWidth = 6;
@@ -1164,6 +1194,45 @@ class AnimationEngine {
         requestAnimationFrame(animate);
       }
     }
+
+    canvas.onmousemove = function (event) {
+      // Reorder the play scores so that the hovered one is on top (of the player ones), then redraw
+
+      let x = event.offsetX;
+      let y = event.offsetY;
+      let found = false;
+
+      for (let i = 0; i < userAnswerData.length; i++) {
+        let x_answer =
+          (effective_width * (answersX[i] - _origMinX)) /
+          (_origMaxX - _origMinX);
+        if (
+          x > x_offset + x_answer - 4 &&
+          x < x_offset + x_answer + 4 &&
+          y > axisY - 10 &&
+          y < axisY + 8
+        ) {
+          let new_index = userAnswerData.length - 1;
+
+          let tmp = answers[new_index];
+          answers[new_index] = answers[i];
+          answers[i] = tmp;
+
+          tmp = userAnswerData[new_index];
+          userAnswerData[new_index] = userAnswerData[i];
+          userAnswerData[i] = tmp;
+
+          tmp = answersX[new_index];
+          answersX[new_index] = answersX[i];
+          answersX[i] = tmp;
+
+          found = true;
+          break;
+        }
+      }
+
+      if (found) animate();
+    };
 
     requestAnimationFrame(animate);
   }
