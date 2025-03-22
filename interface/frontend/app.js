@@ -649,7 +649,6 @@ class OnlineGameClient extends GameClient {
 
   handleNextQuestion() {
     this.send("ready_for_next_round");
-    displayFeedbackScreen();
   }
 }
 

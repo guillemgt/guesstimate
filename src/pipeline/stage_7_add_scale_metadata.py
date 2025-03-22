@@ -137,16 +137,22 @@ def add_scale_metadata(
         filter_questions=lambda questions: [
             question
             for question in questions
-            if (
-                question["scale-interval"]["lower_bound"] is None
-                or question["scale-interval"]["lower_bound"]
-                < question["value"]["value"]
-            )
-            and (
-                question["scale-interval"]["upper_bound"] is None
-                or question["scale-interval"]["upper_bound"]
-                > question["value"]["value"]
+            for answer in [question["rewritten-description"]["answer"]]
+            if print(answer)
+            or (
+                (
+                    question["scale-interval"]["lower_bound"] is None
+                    or question["scale-interval"]["lower_bound"]
+                    < answer.get("value", answer.get("min_value"))
+                )
+                and (
+                    question["scale-interval"]["upper_bound"] is None
+                    or question["scale-interval"]["upper_bound"]
+                    > answer.get("value", answer.get("max_value"))
+                )
             )
         ],
         examples=EXAMPLES,
     )
+
+    return output_file

@@ -173,7 +173,11 @@ wss.on("connection", (ws, req) => {
 
           room.readyForNextRound.set(ws.uuid, true);
 
-          room.proceedIfEveryoneIsReadyForNextRound();
+          if (!room.proceedIfEveryoneIsReadyForNextRound()) {
+            ws.send(
+              JSON.stringify({ action: "waiting_for_everyone_to_be_ready" })
+            );
+          }
           break;
         }
 

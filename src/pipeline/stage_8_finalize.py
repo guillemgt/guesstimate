@@ -31,19 +31,30 @@ def finalize(
 
     final_questions = [
         {
+            "uuid": question["uuid"],
             "topic": question["topic"],
-            "description": question["rewritten-description"],
+            "description": [
+                question["rewritten-description"]["prompt"][len("Estimate ") :],
+                question["rewritten-description"]["date"],
+                question["rewritten-description"]["units"],
+            ],
             "answer": (
-                question["value"]["value"]
-                if "single_value" in question["value"]
-                else [question["min_value"], question["max_value"]]
+                question["rewritten-description"]["answer"]["value"]
+                if "single_value" in question["rewritten-description"]["answer"]
+                else [
+                    question["rewritten-description"]["answer"]["min_value"],
+                    question["rewritten-description"]["answer"]["max_value"],
+                ]
             ),
             "excerpt": question["found_excerpt"],
             "scale-interval": question["scale-interval"],
         }
         for question in questions
-        if not use_handwritten_filter
-        or question["scale-interval"]["lower_bound"] is not None
+        if (
+            not use_handwritten_filter
+            or question["scale-interval"]["lower_bound"] is not None
+        )
+        and question["rewritten-description"]["prompt"].startswith("Estimate ")
     ]
 
     # Write the final questions to the output file
