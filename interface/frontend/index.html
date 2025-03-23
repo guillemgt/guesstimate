@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guesstimate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  
+</head>
+<body>
+  <div id="app">
+    <h1><span>G</span><span>u</span><span>e</span><span>s</span><span>s</span><span>t</span><span>i</span><span>m</span><span>a</span><span>t</span><span>e</span></h1>
+    <div id="loading-container" class="shown-screen">
+    </div>
+    <div id="question-container">
+      <!--<p><strong>Topic:</strong> <span id="topic"></span></p>-->
+      <p><span id="description"></span></p> 
+      <p><span id="date"></span></p>
+      <p><span id="unit"></span></p>
+    </div>
+    <div id="input-container">
+      <input type="input" id="user-answer" placeholder="">
+      <br>
+      <button id="submit-btn">Guess</button>
+    </div>
+    <div id="waiting-for-answers-container">
+      <br>
+      <h2>Waiting for other players to guess...</h2>
+    </div>
+    <div id="result-container">
+      <div id="visualization">
+        <canvas id="visualization-canvas"></canvas>
+      </div>
+      <p><div id="found-excerpt"></div></p>
+      <button id="next-question-btn">Next</button>
+    </div>
+    <div id="feedback-container">
+      <h2>What did you think of the question?</h2>
+      <div id="feedback-button-container">
+        <div id="feedback-good-btn"></div>
+        <div id="feedback-bad-btn"></div>
+        <div>Interesting question</div>
+        <div>Bad question<br/>Wrong answer</div>
+      </div>
+    </div>
+    <div id="error-container">
+      <h2>Oops! Something went wrong.</h2>
+      <span id="error-message"></span>
+      <p>Try refreshing the page.</p>
+    </div>
+    <!-- <button id="debugScoreDisplay">Debug score display</button> -->
+    <div id="shareButton-container">
+      <input type="text" id="playerName" placeholder="Your player name"/>
+      <button id="shareButton">Play with others</button>
+      <span id="copy-tooltip">Copied!</span>
+    </div>
+    <!-- <dialog>
+      Players in this device:<br/>
+      <input class="playerNameInput" placeholder="Write to add a player"/>
+    </dialog> -->
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/pako/dist/pako.min.js"></script><!--gzip-->
+  <script src="app.js"></script>
+  <script src="anime.min.js"></script>
+</body>
+</html>

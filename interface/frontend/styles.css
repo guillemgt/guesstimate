@@ -1,0 +1,253 @@
+body {
+    font-family: "Manrope", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0px;
+    text-align: center;
+}
+
+
+#loading-container, #question-container, #input-container, #waiting-for-answers-container, #result-container, #feedback-container, #error-container {
+    margin-top: 20px;
+}
+#loading-container:not(.shown-screen), #question-container:not(.shown-screen), #input-container:not(.shown-screen), #waiting-for-answers-container:not(.shown-screen), #result-container:not(.shown-screen), #feedback-container:not(.shown-screen), #error-container:not(.shown-screen) {
+    display: none;
+}
+
+#found-excerpt {
+    padding: 1em;
+}
+
+button {
+    cursor: pointer;
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #b00;
+    color: white;
+    border: none;
+    border-radius: 3px;
+}
+
+h1 {
+    font-size: 2.5em;
+    color: #b00;
+    margin-bottom: 0;
+    height: 148px;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+h1 span {
+    max-height: 96px;
+    height: 96px;
+    display: inline-block;
+    overflow: visible;
+}
+
+#description {
+    font-size: 1.5em;
+}
+#unit, #date {
+    font-size: 1.25em;
+}
+
+#user-answer {
+    margin-top: 20px;
+    padding: 15px;
+    font-size: 1.5em;
+    max-width: 100%; /* Make it responsive */
+    text-align: center;
+}
+#user-answer.error {
+    background-color: #d58181;
+    color: white;
+}
+
+#shareButton-container {
+    position: fixed; /* Changed to fixed for better positioning */
+    bottom: 20px;
+    right: 20px;
+    text-align: right;
+}
+#shareButton-container input {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 3px;
+    display: none;
+}
+
+#shareButton {
+    position: relative;
+}
+
+#copy-tooltip {
+    visibility:hidden;
+    position:absolute;
+    background:#333;
+    color:white;
+    padding:8px 12px;
+    border-radius:4px;
+    font-size:0.9em;
+}
+
+#loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 100px;
+}
+
+#loading-container::before { 
+    content: "";
+    width: 50px;
+    height: 50px;
+    border: 5px solid #b00;
+    border-top: 5px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+#feedback-container {
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    align-items: center;
+}
+
+#feedback-button-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    grid-column-gap: 40px;
+    grid-row-gap: 40px;
+    max-width: 400px;
+}
+
+#feedback-good-btn, #feedback-bad-btn {
+    padding: 50px;
+    border-radius: 5px;
+    background-image: url(thumb.png);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 48px;
+    cursor: pointer;
+}
+
+
+#feedback-good-btn {
+    background-color: #aaedaa;
+    border: 3px solid #7fc77f;
+}
+
+#feedback-good-btn:hover {
+    background-color: #7fc77f;
+}
+
+#feedback-good-btn.clicked {
+    background-color: #efffef;
+    border-color: #c8e7c8;
+}
+
+#feedback-good-btn.notclicked {
+    background-color: #eee;
+    border-color: #ddd;
+}
+
+#feedback-bad-btn {
+    background-color: #edaaaa;
+    border: 3px solid #c77f7f;
+    transform: rotate(180deg);
+}
+
+#feedback-bad-btn:hover {
+    background-color: #c77f7f;
+}
+
+#feedback-bad-btn.clicked {
+    background-color: #feeef0;
+    border-color: #e7c8c8;
+}
+
+#feedback-bad-btn.notclicked {
+    background-color: #eee;
+    border-color: #ddd;
+}
+
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Media Queries for Responsive Design */
+
+/* For tablets and larger screens */
+@media (min-width: 600px) {
+    h1 {
+        font-size: 4em; /* Larger font for bigger screens */
+    }
+
+    #description {
+        font-size: 2em;
+    }
+    #unit, #date {
+        font-size: 1.75em;
+    }
+
+    #user-answer {
+        font-size: 2em;
+    }
+}
+
+/* For laptops and desktops */
+@media (min-width: 1024px) {
+    h1 {
+        font-size: 5em;
+    }
+
+    #description {
+        font-size: 2.5em;
+    }
+    #unit, #date {
+        font-size: 2em;
+    }
+
+    #user-answer {
+        font-size: 2.5em;
+    }
+}
+
+/* For very large screens */
+@media (min-width: 1440px) {
+    h1 {
+        font-size: 6em;
+    }
+
+    #description {
+        font-size: 3em;
+    }
+    #unit, #date {
+        font-size: 2.5em;
+    }
+
+    #user-answer {
+        font-size: 3em;
+    }
+}

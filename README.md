@@ -8,14 +8,12 @@ You can play the game [here](https://tarr.ch/guesstimate).
 
 ### Generating the questions
 
-With GPT-4o, generating 3,500+ questions (out of 1,000+ topics and 10,000+ initial questions) cost $5.355 (an average of 6+ questions per cent).
+With the current pipeline (with GPT-4o-mini and GPT-4o), generating 3,000 questions (filtered out of 50,000+ initial questions) costs approximately $20.
 
-Before you use it, modify the topics in `topics.json` if necessary.
+Create a file called `.env` containing `OPENAI_API_KEY=<your OpenAI key>`.
 
-Create a file called `.env` containing ```OPENAI_API_KEY=<your OpenAI key>```.
-
-Run with `node generate-questions.js`.
+To run the pipeline: `python src/main.py`.
 
 ### Web interface
 
-Move the generated `data.json.gz` to the `interface/` directory and start a web server in that folder.
+Move the generated file to to `interface/backend/data.json` directory and execute `server.js` with `node`. Finally, start a webserver in `interface/frontend`.
