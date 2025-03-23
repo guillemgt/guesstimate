@@ -991,7 +991,6 @@ class AnimationEngine {
     }
 
     resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
 
     const correctAnswerIsInterval = typeof correctAnswer == "object";
     const userAnswers = [];
@@ -1025,16 +1024,25 @@ class AnimationEngine {
 
     // Animate zoom
     const duration = 3000;
+    const point_sum_duration = 1000;
     const startTime = performance.now();
 
     function transition(x) {
       return Math.sin((x * Math.PI) / 2);
     }
 
+    let animation_done = false;
     function animate() {
       const currentTime = performance.now();
       const elapsedTime = currentTime - startTime;
       const t = transition(Math.min(elapsedTime / duration, 1));
+      const t_extended = Math.max(
+        Math.min(
+          ((elapsedTime / duration - 1) * duration) / point_sum_duration,
+          1
+        ),
+        0
+      );
 
       const initialZoom = 10.0;
       let origMaxX =
@@ -1143,11 +1151,19 @@ class AnimationEngine {
 
         let labelText = self.displayNumber(answers[i]);
         if (i < userAnswers.length) {
+          let effective_t = Math.min(1, t_extended * 1.2); // TO=o make sure you actually see the correct score in the end
+          let totalScore = Math.round(
+            userAnswerData[i].totalScore -
+              userAnswerData[i].score +
+              effective_t * userAnswerData[i].score
+          );
           if (userAnswerData[i].player) {
             labelText =
               labelText +
               "\n\n" +
-              userAnswerData[i].score +
+              ("(+" + userAnswerData[i].score + ")") +
+              "\n" +
+              totalScore +
               " pts" +
               "\n" +
               userAnswerData[i].player;
@@ -1232,8 +1248,10 @@ class AnimationEngine {
 
       context.restore();
 
-      if (t < 1) {
+      if (t_extended < 1) {
         requestAnimationFrame(animate);
+      } else {
+        animation_done = true;
       }
     }
 
@@ -1272,6 +1290,11 @@ class AnimationEngine {
           break;
         }
       }
+
+      window.addEventListener("resize", function () {
+        resizeCanvas();
+        if (animation_done) animate();
+      });
 
       if (found) animate();
     };

@@ -35,18 +35,21 @@ class Room {
     const question = this.currentQuestion.question;
     const player_answers = this.answersThisRound;
     const player_scores = computeScores(player_answers, question);
-    const player_answers_and_scores = Array.from(player_answers).map(
-      ([player_uuid, answer]) => ({
-        player: this.players.get(player_uuid).playerName,
-        answer,
-        score: player_scores.get(player_uuid),
-      })
-    );
+
     // Add scores
     this.players.forEach((player, uuid) => {
       const score = player_scores.get(uuid) || 0;
       this.totalScores.set(uuid, (this.totalScores.get(uuid) || 0) + score);
     });
+
+    const player_answers_and_scores = Array.from(player_answers).map(
+      ([player_uuid, answer]) => ({
+        player: this.players.get(player_uuid).playerName,
+        answer,
+        score: player_scores.get(player_uuid),
+        totalScore: this.totalScores.get(player_uuid),
+      })
+    );
 
     broadcast(this.roomCode, {
       action: "round_scores",
