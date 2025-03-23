@@ -65,6 +65,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("shareButton")
     .addEventListener("click", () => gameClient.onShare());
+  document.getElementById("playerName").oninput = function () {
+    console.log(this);
+    gameClient.changePlayerName(this.value);
+  };
 
   // Questions
 
@@ -78,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
     _showNewScreen(start_fn, changer_fn, also_change_question);
   }
   function _showNewScreen(start_fn, changer_fn, also_change_question) {
-    console.log(start_fn);
     start_fn();
 
     let question_description_exception = ":not(#question-container)";
@@ -95,7 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
         translateX: [0, window.innerWidth],
         easing: "easeInElastic(1, .6)",
         complete: function (anim) {
-          console.log("--------------");
           for (let element of [
             ...(also_change_question ? [questionContainer] : []),
             ...[
@@ -108,11 +110,9 @@ document.addEventListener("DOMContentLoaded", () => {
             ],
           ]) {
             if (element.classList.contains("future-shown-screen")) {
-              console.log("showing", element.id);
               element.classList.remove("future-shown-screen");
               element.classList.add("shown-screen");
             } else {
-              console.log("hiding", element.id);
               element.classList.remove("shown-screen");
             }
           }
@@ -460,6 +460,10 @@ class GameClient {
     throw new Error("voteQuestion method not implemented.");
   }
 
+  changePlayerName(name) {
+    throw new Error("changePlayerName method not implemented.");
+  }
+
   on() {
     throw new Error("on method not implemented.");
   }
@@ -482,10 +486,19 @@ class OnlineGameClient extends GameClient {
     }
     this.uuid = uuid_cookie;
 
+    let player_name = getCookie("guesstimate-player-name");
+    let player_name_url_part = "";
+    if (player_name) {
+      document.getElementById("playerName").value = player_name;
+      player_name_url_part = `&playerName=${encodeURIComponent(player_name)}`;
+    }
+
     this.onMessage = this.onMessage.bind(this);
 
     // Start connection
-    this.socket = new WebSocket(this.serverUrl + "?uuid=" + this.uuid);
+    this.socket = new WebSocket(
+      this.serverUrl + "?uuid=" + this.uuid + player_name_url_part
+    );
     this.socket.onmessage = this.onMessage;
     this.socket.onopen = () => {
       console.log("Connected to the server.");
@@ -512,10 +525,17 @@ class OnlineGameClient extends GameClient {
     console.log("Message from server:", data);
 
     switch (data.action) {
+      case "player_name":
+        document.getElementById("playerName").value = data.name;
+        break;
       case "room_created":
         this.roomCode = data.roomCode;
         console.log(`Room created with code: ${this.roomCode}`);
         this.startRound();
+        break;
+      case "room_joined":
+        this.roomCode = data.roomCode;
+        document.getElementById("playerName").style.display = "inline-block";
         break;
       case "player_joined":
         console.log(data.message);
@@ -597,6 +617,11 @@ class OnlineGameClient extends GameClient {
     this.send("vote_question", { vote }); // 'good' or 'bad'
   }
 
+  changePlayerName(name) {
+    this.send("player_name", { name });
+    setCookie("guesstimate-player-name", name, 365);
+  }
+
   // Other
   generateUUID() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
@@ -634,17 +659,35 @@ class OnlineGameClient extends GameClient {
 
     console.log("Modified URL:", modifiedUrl);
 
+    const tooltip = document.getElementById("copy-tooltip");
+    const button = document.getElementById("shareButton");
+
     // Copy the modified URL to the clipboard
     navigator.clipboard
       .writeText(modifiedUrl)
       .then(function () {
         console.log("URL copied to clipboard");
+
+        tooltip.textContent = "Copied!";
       })
       .catch(function (err) {
         alert("Failed to copy " + modifiedUrl + " : ", err);
+        tooltip.textContent = "Failed to copy. Pasted to bar.";
+        window.location.href = url;
       });
 
+    tooltip.style.visibility = "visible";
+
+    const rect = button.getBoundingClientRect();
+    tooltip.style.bottom = rect.bottom - rect.top + 5 + "px";
+    tooltip.style.right = "5px";
+    setTimeout(() => {
+      tooltip.style.visibility = "hidden";
+    }, 2000);
+
     // this.putRoomCodeInURL();
+
+    document.getElementById("playerName").style.display = "inline-block";
   }
 
   handleNextQuestion() {

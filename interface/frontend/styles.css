@@ -75,10 +75,32 @@ h1 span {
     color: white;
 }
 
-#shareButton {
+#shareButton-container {
     position: fixed; /* Changed to fixed for better positioning */
     bottom: 20px;
     right: 20px;
+    text-align: right;
+}
+#shareButton-container input {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 3px;
+    display: none;
+}
+
+#shareButton {
+    position: relative;
+}
+
+#copy-tooltip {
+    visibility:hidden;
+    position:absolute;
+    background:#333;
+    color:white;
+    padding:8px 12px;
+    border-radius:4px;
+    font-size:0.9em;
 }
 
 #loading-container {

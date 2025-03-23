@@ -96,20 +96,43 @@ wss.on("connection", (ws, req) => {
   if (!requestQuery || !requestQuery.uuid) {
     return;
   }
-  ws.playerName = generatePlayerName();
+  let request_has_player_name = requestQuery.playerName !== undefined;
+  ws.playerName = request_has_player_name
+    ? requestQuery.playerName
+    : generatePlayerName();
   ws.uuid = requestQuery.uuid;
+
+  if (!request_has_player_name)
+    ws.send(
+      JSON.stringify({
+        action: "player_name",
+        name: ws.playerName,
+      })
+    );
+
   ws.on("message", (message) => {
     try {
       const data = JSON.parse(message);
 
       switch (data.action) {
+        case "player_name": {
+          data.name = data.name.replace(/[^a-zA-Z0-9 _]/g, "");
+          data.name = data.name.substring(0, 20);
+          ws.playerName = data.name;
+          break;
+        }
         case "create_room": {
           const room = new Room();
           const roomCode = room.roomCode;
           rooms.set(roomCode, room);
           room.players.set(ws.uuid, ws);
           ws.roomCode = roomCode;
-          ws.send(JSON.stringify({ action: "room_created", roomCode }));
+          ws.send(
+            JSON.stringify({
+              action: "room_created",
+              roomCode,
+            })
+          );
           break;
         }
 
@@ -117,6 +140,13 @@ wss.on("connection", (ws, req) => {
           const { roomCode } = data;
           const room = rooms.get(roomCode);
           if (room) {
+            ws.send(
+              JSON.stringify({
+                action: "room_joined",
+                roomCode,
+              })
+            );
+
             room.players.set(ws.uuid, ws);
             ws.roomCode = roomCode;
             room.totalScores.set(ws.uuid, 0);
