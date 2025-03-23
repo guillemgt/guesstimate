@@ -12,12 +12,14 @@ if __name__ == "__main__":
 
     # Read the metadata files
     input_costs = sum(
-        json.load(open(f"{pipeline_dir}/{f}")).get("input_cost", 0.0)
+        data.get("input_cost", 0.0) if isinstance(data, dict) else 0.0
         for f in metadata_files
+        for data in [json.load(open(f"{pipeline_dir}/{f}", encoding="utf-8"))]
     )
     output_costs = sum(
-        json.load(open(f"{pipeline_dir}/{f}")).get("output_cost", 0.0)
+        data.get("output_cost", 0.0) if isinstance(data, dict) else 0.0
         for f in metadata_files
+        for data in [json.load(open(f"{pipeline_dir}/{f}", encoding="utf-8"))]
     )
 
     # Print the total costs

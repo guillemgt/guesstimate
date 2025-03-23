@@ -61,4 +61,16 @@ def finalize(
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(final_questions, f, ensure_ascii=False, indent=1)
 
+    with open(
+        output_file.replace(".json", ".metadata.json"), "w", encoding="utf-8"
+    ) as f:
+        json.dump(
+            {
+                "number_of_questions": len(final_questions),
+            },
+            f,
+            ensure_ascii=False,
+            indent=1,
+        )
+
     return output_file
