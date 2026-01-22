@@ -1,7 +1,6 @@
 import os
 import json
 import requests
-from collections import defaultdict
 import string
 
 from utils.input_output import output_and_log_files

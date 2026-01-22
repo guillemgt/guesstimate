@@ -1,20 +1,12 @@
 import sys
 import os
-from enum import Enum
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from pydantic import BaseModel, Field
-from typing import Tuple, Union, Optional
-from enum import Enum
-from tqdm import tqdm
-from dotenv import load_dotenv
 
 from functools import partial
 from utils.input_output import output_and_log_files
 from pipeline.general.generic_api_step import (
     generic_api_processing_step,
-    fetch_api_response_and_process_with_structured_outputs,
     fetch_api_response_and_process_with_logprobs,
 )
 from pipeline.stage_4_mine_quantities import SingleValueModifier
