@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const userAnswerElement = document.getElementById("user-answer");
   const submitBtn = document.getElementById("submit-btn");
   const watingForAnswersContainer = document.getElementById(
-    "waiting-for-answers-container"
+    "waiting-for-answers-container",
   );
   const resultContainer = document.getElementById("result-container");
   const foundExcerptElement = document.getElementById("found-excerpt");
@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // let gameClient = new OfflineGameClient();
   let gameClient = new OnlineGameClient(
-    "ws://" + window.location.hostname + ":8080"
+    "ws://" + window.location.hostname + ":8080",
   );
 
   // Seeding
@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
           : "";
         userAnswerElement.value = "";
       },
-      true
+      true,
     );
   };
 
@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
       function () {
         watingForAnswersContainer.classList.add("future-shown-screen");
       },
-      function () {}
+      function () {},
     );
   };
 
@@ -171,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
         feedbackButtonBad.classList.remove("clicked");
         feedbackButtonGood.classList.remove("notclicked");
         feedbackButtonBad.classList.remove("notclicked");
-      }
+      },
     );
   };
 
@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (message)
           document.getElementById("error-message").textContent = message;
       },
-      true
+      true,
     );
   };
 
@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gameClient.submitAnswer(userAnswer);
   });
   nextQuestionBtn.addEventListener("click", () =>
-    gameClient.handleNextQuestion()
+    gameClient.handleNextQuestion(),
   );
 
   feedbackButtonGood.onclick = function () {
@@ -228,16 +228,21 @@ document.addEventListener("DOMContentLoaded", () => {
   gameClient.onQuestionChecking = function (
     userAnswers,
     correctAnswer,
-    excerpt
+    excerpt,
   ) {
     showNewScreen(
       function () {
         resultContainer.classList.add("future-shown-screen");
       },
       function () {
-        foundExcerptElement.textContent = excerpt;
+        // Convert ***highlighted*** text to HTML spans
+        const processedExcerpt = excerpt.replace(
+          /\*\*\*(.*?)\*\*\*/g,
+          '<span class="excerpt-highlight">$1</span>',
+        );
+        foundExcerptElement.innerHTML = processedExcerpt;
         animationEngine.showVisualization(userAnswers, correctAnswer);
-      }
+      },
     );
   };
 });
@@ -497,7 +502,7 @@ class OnlineGameClient extends GameClient {
 
     // Start connection
     this.socket = new WebSocket(
-      this.serverUrl + "?uuid=" + this.uuid + player_name_url_part
+      this.serverUrl + "?uuid=" + this.uuid + player_name_url_part,
     );
     this.socket.onmessage = this.onMessage;
     this.socket.onopen = () => {
@@ -630,7 +635,7 @@ class OnlineGameClient extends GameClient {
         var r = (Math.random() * 16) | 0,
           v = c == "x" ? r : (r & 0x3) | 0x8;
         return v.toString(16);
-      }
+      },
     );
   }
 
@@ -767,7 +772,7 @@ class OfflineGameClient extends GameClient {
     this.onQuestionChecking(
       { answer: userAnswer },
       correctAnswer,
-      question.excerpt
+      question.excerpt,
     );
   }
 
@@ -998,7 +1003,7 @@ class AnimationEngine {
       userAnswers.push(userAnswerData[i].answer);
     }
     const answers = userAnswers.concat(
-      correctAnswerIsInterval ? [...correctAnswer] : [correctAnswer]
+      correctAnswerIsInterval ? [...correctAnswer] : [correctAnswer],
     );
     const colors = Array(userAnswers.length)
       .fill("#BB0000")
@@ -1039,9 +1044,9 @@ class AnimationEngine {
       const t_extended = Math.max(
         Math.min(
           ((elapsedTime / duration - 1) * duration) / point_sum_duration,
-          1
+          1,
         ),
-        0
+        0,
       );
 
       const initialZoom = 10.0;
@@ -1063,7 +1068,7 @@ class AnimationEngine {
       let tickValues = calculateRoundLogTicks(
         origMaxX - origMinX,
         numTicks,
-        tickScale
+        tickScale,
       );
       if (origMinX < 0) {
         // Copy the positive ticks as negative ticks
@@ -1128,7 +1133,7 @@ class AnimationEngine {
             context.fillText(
               lines[j],
               x_offset + x,
-              axisY + 2 * margin + j * lineHeight
+              axisY + 2 * margin + j * lineHeight,
             );
           }
           lastX = x + tickLabelWidth / 2;
@@ -1155,7 +1160,7 @@ class AnimationEngine {
           let totalScore = Math.round(
             userAnswerData[i].totalScore -
               userAnswerData[i].score +
-              effective_t * userAnswerData[i].score
+              effective_t * userAnswerData[i].score,
           );
           if (userAnswerData[i].player) {
             labelText =
@@ -1195,20 +1200,20 @@ class AnimationEngine {
         context.lineTo(textX + textWidth / 2 + padding, textY - padding);
         context.lineTo(
           textX + textWidth / 2 + padding,
-          textY + textHeight + padding
+          textY + textHeight + padding,
         );
         context.lineTo(
           pointerX + pointerWidth / 2,
-          textY + textHeight + padding
+          textY + textHeight + padding,
         );
         context.lineTo(pointerX, pointerY);
         context.lineTo(
           pointerX - pointerWidth / 2,
-          textY + textHeight + padding
+          textY + textHeight + padding,
         );
         context.lineTo(
           textX - textWidth / 2 - padding,
-          textY + textHeight + padding
+          textY + textHeight + padding,
         );
         context.closePath();
         context.fill();
@@ -1221,7 +1226,7 @@ class AnimationEngine {
           context.fillText(
             lines[j],
             x_offset + x,
-            axisY - 2 * margin + j * lineHeight
+            axisY - 2 * margin + j * lineHeight,
           );
         }
       }
@@ -1233,13 +1238,13 @@ class AnimationEngine {
           x_offset +
             (effective_width * (answersX[answersX.length - 2] - origMinX)) /
               (origMaxX - origMinX),
-          axisY
+          axisY,
         );
         context.lineTo(
           x_offset +
             (effective_width * (answersX[answersX.length - 1] - origMinX)) /
               (origMaxX - origMinX),
-          axisY
+          axisY,
         );
         context.strokeStyle = colors[answersX.length - 1];
         context.lineWidth = 6;

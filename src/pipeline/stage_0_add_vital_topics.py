@@ -103,7 +103,7 @@ def add_vital_topics(
         if json_data:
             articles.extend(process_into_article_list(json_data))
 
-    with open(output_file, "w") as f:
-        json.dump(articles, f, indent=4)
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(articles, f, ensure_ascii=False, indent=4)
 
     return output_file

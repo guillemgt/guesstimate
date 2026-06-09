@@ -25,9 +25,14 @@ def binary_search_interactive(data, key, questions_per_round=5):
         valids = 0
         invalids = 0
         for i, idx in enumerate(query_indices):
-            q = " ".join(
-                v for v in data[idx]["rewritten-description"].values() if v is not None
-            )
+            if "rewritten-description" in data[idx]:
+                q = " ".join(
+                    v
+                    for v in data[idx]["rewritten-description"].values()
+                    if v is not None and isinstance(v, str)
+                )
+            else:
+                q = data[idx]["topic"] + ": " + data[idx]["description"]
             print(f"{i + 1}: {q}")
             response = input(f"Is this valid? (yes/no): ").strip().lower()
             if response in ("yes", "y"):
@@ -54,7 +59,7 @@ def binary_search_interactive(data, key, questions_per_round=5):
 
 
 def main():
-    file_path = r"data\pipeline\17_stage_6_filter_clarity.unfiltered.json"
+    file_path = r"data\pipeline\15_stage_6_filter_clarity.unfiltered.json"
     key = input("Enter the key containing the float values: ").strip()
 
     data = load_json(file_path)

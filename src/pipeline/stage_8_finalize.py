@@ -4,6 +4,14 @@ import json
 from utils.input_output import output_and_log_files
 
 
+def process_interval(answer):
+    if not isinstance(answer, list):
+        return answer
+    if len(set(answer)) == 1:
+        return answer[0]
+    return list(sorted(answer))
+
+
 def finalize(
     input_file: str,
     output_file: str | None = None,
@@ -26,27 +34,36 @@ def finalize(
             "uuid": question["uuid"],
             "topic": question["topic"],
             "description": [
-                question["rewritten-description"]["prompt"][len("Estimate ") :],
-                question["rewritten-description"]["date"],
+                question["rewritten-description"]["description"].removeprefix(
+                    "Estimate "
+                ),
+                question["rewritten-description"]["time_period"],
                 question["rewritten-description"]["units"],
             ],
-            "answer": (
-                question["rewritten-description"]["answer"]["value"]
-                if "single_value" in question["rewritten-description"]["answer"]
-                else [
-                    question["rewritten-description"]["answer"]["min_value"],
-                    question["rewritten-description"]["answer"]["max_value"],
-                ]
+            "answer": process_interval(
+                question["rewritten-description"]["answer"]["value_or_interval"]
             ),
-            "excerpt": question["found_excerpt"],
-            "scale-interval": question["scale-interval"],
+            "excerpt": " ".join(
+                x
+                for x in [
+                    question["found_excerpt_expansion"][0],
+                    question["excerpt_with_highlight"],
+                    question["found_excerpt_expansion"][1],
+                ]
+                if x.strip()
+            ),
+            "scale-interval": (
+                question["scale-interval"]
+                if "scale-interval" in question
+                else {"lower_bound": 0, "upper_bound": None}
+            ),
         }
         for question in questions
         if (
-            not use_handwritten_filter
-            or question["scale-interval"]["lower_bound"] is not None
+            True
+            # not use_handwritten_filter
+            # or question["scale-interval"]["lower_bound"] is not None
         )
-        and question["rewritten-description"]["prompt"].startswith("Estimate ")
     ]
 
     # Write the final questions to the output file

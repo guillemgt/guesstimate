@@ -3,14 +3,6 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils.input_output import output_and_log_files
-
-
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from utils.wikipedia import query
 
 import os
@@ -18,6 +10,11 @@ import json
 from bs4 import BeautifulSoup
 from tokenizers import Tokenizer
 from pathlib import Path
+import concurrent.futures
+import time
+
+from utils.input_output import output_and_log_files
+
 
 # Load GPT-3 tokenizer
 tokenizer = Tokenizer.from_pretrained("gpt2")
@@ -28,12 +25,14 @@ tokenizer = Tokenizer.from_pretrained("gpt2")
 
 
 def query_and_process_wiki_articles(list_of_topic_and_path):
-    print(len(list_of_topic_and_path))
     for topic_and_path in list_of_topic_and_path:
         try:
             topic, wikidump_path = topic_and_path
+            if Path(wikidump_path).exists():
+                continue
             response = query(topic)
             process_wiki_article(response, topic, wikidump_path)
+            time.sleep(2)
         except Exception as e:
             print("Error:", e)
 
@@ -42,12 +41,12 @@ def process_wiki_article(wikipedia_response_json_text, topic, wikidump_path):
     print(f"Processing article {topic}")
 
     if Path(wikidump_path).exists():
-        return
+        return False
 
     json_data = json.loads(wikipedia_response_json_text)
     if "parse" not in json_data:
-        print("Article not found")
-        return
+        print(f"Article not found: {topic}")
+        return False
 
     html_txt = json_data["parse"]["text"]["*"]
     soup = BeautifulSoup(html_txt, "html.parser")
@@ -85,17 +84,19 @@ def process_wiki_article(wikipedia_response_json_text, topic, wikidump_path):
 
         # Tokenize text and check length
         encoded = tokenizer.encode(next_parsed_text)
-        if len(encoded.ids) > 9000:
+        if len(encoded.ids) > 20_000:
             break
 
         parsed_text = next_parsed_text
 
     parsed_text = parsed_text.strip()
     if not parsed_text or parsed_text == "[...]":
-        return
+        return False
 
     with open(wikidump_path, "w", encoding="utf-8") as f:
         f.write(parsed_text)
+
+    return True
 
 
 def download_wikipedia_pages(
@@ -119,29 +120,40 @@ def download_wikipedia_pages(
     with open(topics_file, "r", encoding="utf-8") as f:
         topics = json.load(f)
 
+    # Fix mojibake encoding issues (e.g., "PokÃ©mon" -> "Pokémon")
+    def fix_encoding(text):
+        try:
+            # If text was incorrectly decoded, re-encode as latin-1 and decode as utf-8
+            return text.encode("latin-1").decode("utf-8")
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            # If it fails, the text is probably fine
+            return text
+
     topics = list(set(t["_"] if isinstance(t, dict) else t for t in topics))
+    topics = [fix_encoding(topic) for topic in topics]
+    topics = sorted(topics)
 
     # Prepare topics for processing
     topics_with_paths = [
         (topic, os.path.join(dir_wikidump, f"{topic}.txt")) for topic in topics
     ]
 
-    # try:
-    #     # Run parallel processing with concurrent tasks
-    #     max_concurrent_tasks = 5
-    #     with concurrent.futures.ThreadPoolExecutor() as executor:
-    #         executor.map(
-    #             query_and_process_wiki_articles,
-    #             [
-    #                 topics_with_paths[i::max_concurrent_tasks]
-    #                 for i in range(max_concurrent_tasks)
-    #             ],
-    #         )
-    # except Exception as e:
-    #     print("Error:", e)
-    #     os._exit(0)
+    try:
+        # Run parallel processing with concurrent tasks
+        max_concurrent_tasks = 5
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(
+                query_and_process_wiki_articles,
+                [
+                    topics_with_paths[i::max_concurrent_tasks]
+                    for i in range(max_concurrent_tasks)
+                ],
+            )
+    except Exception as e:
+        print("Error:", e)
+        os._exit(0)
 
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(
             [
                 {"topic": topic, "topic_dump_path": path}
@@ -149,6 +161,7 @@ def download_wikipedia_pages(
                 if os.path.exists(path)
             ],
             f,
+            ensure_ascii=False,
             indent=4,
         )
 

@@ -48,7 +48,7 @@ class Room {
         answer,
         score: player_scores.get(player_uuid),
         totalScore: this.totalScores.get(player_uuid),
-      })
+      }),
     );
 
     broadcast(this.roomCode, {
@@ -110,7 +110,7 @@ wss.on("connection", (ws, req) => {
       JSON.stringify({
         action: "player_name",
         name: ws.playerName,
-      })
+      }),
     );
 
   ws.on("message", (message) => {
@@ -134,7 +134,7 @@ wss.on("connection", (ws, req) => {
             JSON.stringify({
               action: "room_created",
               roomCode,
-            })
+            }),
           );
           break;
         }
@@ -147,7 +147,7 @@ wss.on("connection", (ws, req) => {
               JSON.stringify({
                 action: "room_joined",
                 roomCode,
-              })
+              }),
             );
 
             room.players.set(ws.uuid, ws);
@@ -163,14 +163,14 @@ wss.on("connection", (ws, req) => {
                 JSON.stringify({
                   action: "new_question",
                   question: room.currentQuestion.question,
-                })
+                }),
               );
             } else if (room.state == "waiting_for_next_round") {
               room.readyForNextRound.set(ws.uuid, true);
             }
           } else {
             ws.send(
-              JSON.stringify({ action: "error", code: "room_not_found" })
+              JSON.stringify({ action: "error", code: "room_not_found" }),
             );
           }
           break;
@@ -208,7 +208,7 @@ wss.on("connection", (ws, req) => {
 
           if (!room.proceedIfEveryoneIsReadyForNextRound()) {
             ws.send(
-              JSON.stringify({ action: "waiting_for_everyone_to_be_ready" })
+              JSON.stringify({ action: "waiting_for_everyone_to_be_ready" }),
             );
           }
           break;
@@ -234,7 +234,7 @@ wss.on("connection", (ws, req) => {
     } catch (err) {
       console.log(err);
       ws.send(
-        JSON.stringify({ action: "error", code: "invalid_message_format" })
+        JSON.stringify({ action: "error", code: "invalid_message_format" }),
       );
     }
   });
@@ -324,7 +324,7 @@ function update_score_global_normalization_constants() {
       question.answer,
       L,
       U,
-      false
+      false,
     );
     const bound_type =
       L === null ? (U === null ? "()" : "(]") : U === null ? "[)" : "[]";
@@ -337,7 +337,7 @@ function update_score_global_normalization_constants() {
   for (let bound_type in SCORE_GLOBAL_NORMALIZATION_CONSTANTS) {
     SCORE_GLOBAL_NORMALIZATION_CONSTANTS[bound_type] = Math.sqrt(
       (sum_of_squares[bound_type] + alpha * beta * beta) /
-        (num_samples[bound_type] + alpha)
+        (num_samples[bound_type] + alpha),
     );
   }
   console.log("Normalization constants:", SCORE_GLOBAL_NORMALIZATION_CONSTANTS);
@@ -389,7 +389,7 @@ function compute_std_bayesian_posterior(samples) {
 
   return Math.sqrt(
     (sum_of_squares + prior_strength * prior_estimate * prior_estimate) /
-      (num_samples + prior_strength)
+      (num_samples + prior_strength),
   );
 }
 
@@ -428,7 +428,7 @@ function computeScores(player_answers, question) {
   for (let [player, answer] of player_answers.entries()) {
     answers_transformed.set(
       player,
-      transform_according_to_LU(answer, L, U) - correct_transformed
+      transform_according_to_LU(answer, L, U) - correct_transformed,
     );
   }
   console.log(correct_transformed, answers_transformed);
@@ -447,7 +447,7 @@ function computeScores(player_answers, question) {
   for (let [player, normalized] of answers_normalized.entries()) {
     scores.set(
       player,
-      Math.round(1000 * normalSurvivalProbability(2.0 * normalized))
+      Math.round(1000 * normalSurvivalProbability(2.0 * normalized)),
     );
   }
   return scores;
@@ -455,11 +455,11 @@ function computeScores(player_answers, question) {
 
 function getRandomQuestionIndex() {
   const question_probablilities_unnormalized = GLOBAL_VOTES.map(
-    ({ good, bad }) => good / (good + bad)
+    ({ good, bad }) => good / (good + bad),
   );
   const sum = question_probablilities_unnormalized.reduce((a, b) => a + b, 0);
   const question_probablilities = question_probablilities_unnormalized.map(
-    (p) => p / sum
+    (p) => p / sum,
   );
 
   const random = Math.random();

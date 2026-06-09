@@ -22,12 +22,12 @@ def remove_date_and_unit_from_descriptions(
     num_changed = 0
     for question in questions:
         if "rewritten-description" in question:
-            prompt = question["rewritten-description"]["prompt"]
-            date = question["rewritten-description"].get("date") or ""
+            prompt = question["rewritten-description"]["description"]
+            date = question["rewritten-description"].get("time_period") or ""
             units = question["rewritten-description"].get("units") or ""
             new_prompt = prompt.replace(date, "").replace(units, "")
             if new_prompt != prompt:
-                question["rewritten-description"]["prompt"] = new_prompt
+                question["rewritten-description"]["description"] = new_prompt
                 num_changed += 1
 
     print(f"Number of questions with date and unit removed: {num_changed}")

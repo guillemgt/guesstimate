@@ -42,15 +42,28 @@ class Usage:
         )
 
         model = outputs[0]["model"]
-        if "gpt-4o-mini" in model:
-            input_cost = 0.075 * 1e-6
-            output_cost = 0.300 * 1e-6
-        elif "gpt-4o" in model:
-            input_cost = 1.25 * 1e-6
-            output_cost = 5.0 * 1e-6
-        else:
-            input_cost = 0.0
-            output_cost = 0.0
+
+        # Model pricing in $/1M tokens
+        model_costs = {
+            "gpt-4o-mini": (0.075, 0.300),
+            "gpt-4o": (1.25, 5.0),
+            "gpt-5-nano": (0.025, 0.2),
+            "gpt-5-mini": (0.125, 1.0),
+            "gpt-5.1": (0.625, 5.0),
+            "gpt-5.2": (0.875, 7.0),
+            "gemini-3-flash-preview": (0.25, 1.5),
+            "gemini-3-pro-preview": (1.0, 6.0),
+        }
+
+        cost_model = model
+        for key in model_costs.keys():
+            if model.startswith(key + "-"):
+                cost_model = key
+                break
+
+        input_cost = model_costs.get(cost_model, (0.0, 0.0))[0] / 1e6
+        output_cost = model_costs.get(cost_model, (0.0, 0.0))[1] / 1e6
+
         usage = Usage(
             input_tokens,
             output_tokens,
@@ -58,6 +71,69 @@ class Usage:
             output_tokens * output_cost,
         )
         return usage
+
+
+def fetch_api_response_and_process_raw_text(
+    system_prompt: str,
+    user_prompts: list[str],
+    inprompt_examples: list[tuple[str, BaseModel]],
+    log_path: str,
+    completion_kwargs: Optional[dict] = None,
+    response_key: Optional[str] = None,
+) -> tuple[list[dict], Usage]:
+    # Form the request
+    common_prompt_part = [
+        {"role": "system", "content": system_prompt},
+    ]
+    model = completion_kwargs.pop("model", "gpt-4o-mini")
+    requests = []
+    for user_prompt in user_prompts:
+        requests.append(
+            {
+                "model": model,
+                "messages": common_prompt_part
+                + sum(
+                    (
+                        [
+                            {"role": "user", "content": user_prompt_},
+                            {
+                                "role": "assistant",
+                                "content": example_output.model_dump_json(indent=4),
+                            },
+                        ]
+                        for user_prompt_, example_output in inprompt_examples
+                    ),
+                    [],
+                )
+                + [{"role": "user", "content": user_prompt}],
+                **(completion_kwargs or {}),
+                "n": 1,
+            }
+        )
+
+    # Fetch the API response
+    batch_handler = OpenAIBatchHandler(
+        api_key=os.getenv("OPENAI_API_KEY"), log_dir=log_path
+    )
+    outputs = batch_handler.upload_batches(
+        requests=requests,
+        endpoint="/v1/chat/completions",
+        batch_call_id="filter_correct",
+        max_tokens_per_batch=1_000_000_000,
+        max_requests_per_batch=20_000,
+    )
+    usage = Usage.from_openai_outputs(outputs)
+    assert len(outputs) == len(user_prompts)
+
+    # Process the response
+    true_outputs = [
+        output["choices"][0]["message"] if output else None for output in outputs
+    ]
+    return_dicts = []
+    for true_output in true_outputs:
+        return_dicts.append({response_key: true_output["content"]})
+
+    return return_dicts, usage
 
 
 def fetch_api_response_and_process_with_structured_outputs(
@@ -109,8 +185,8 @@ def fetch_api_response_and_process_with_structured_outputs(
         requests=requests,
         endpoint="/v1/chat/completions",
         batch_call_id="filter_correct",
-        max_tokens_per_batch=35_000_000,
-        max_requests_per_batch=20_000,
+        max_tokens_per_batch=50_000_000,
+        max_requests_per_batch=25_000,
     )
     usage = Usage.from_openai_outputs(outputs)
     assert len(outputs) == len(user_prompts)
@@ -192,6 +268,7 @@ def fetch_api_response_and_process_with_logprobs(
                 "max_completion_tokens": 1,
                 "logprobs": True,
                 "top_logprobs": 20,
+                "reasoning_effort": "none",
             }
         )
 
@@ -255,6 +332,82 @@ def fetch_api_response_and_process_with_logprobs(
     return return_dicts, usage
 
 
+def fetch_api_response_and_process_float_result(
+    system_prompt: str,
+    user_prompts: list[str],
+    inprompt_examples: list[tuple[str, str]],
+    log_path: str,
+    completion_kwargs: Optional[dict] = None,
+    min_value: float = 0.0,
+    max_value: float = 1.0,
+    score_key: str = "score",
+) -> tuple[list[dict], Usage]:
+
+    # Form the request
+    common_prompt_part = [
+        {"role": "system", "content": system_prompt},
+    ]
+    model = completion_kwargs.pop("model", "gpt-5-mini")
+    requests = []
+    for user_prompt in user_prompts:
+        requests.append(
+            {
+                "model": model,
+                "messages": common_prompt_part
+                + sum(
+                    (
+                        [
+                            {"role": "user", "content": example_input},
+                            {
+                                "role": "assistant",
+                                "content": example_output,
+                            },
+                        ]
+                        for example_input, example_output in inprompt_examples
+                    ),
+                    [],
+                )
+                + [{"role": "user", "content": user_prompt}],
+                **(completion_kwargs or {}),
+                "n": 1,
+            }
+        )
+
+    # Fetch the API response
+    batch_handler = OpenAIBatchHandler(
+        api_key=os.getenv("OPENAI_API_KEY"), log_dir=log_path
+    )
+    outputs = batch_handler.upload_batches(
+        requests=requests,
+        endpoint="/v1/chat/completions",
+        batch_call_id="filter_correct",
+        max_tokens_per_batch=35_000_000,
+    )
+    usage = Usage.from_openai_outputs(outputs)
+    assert len(outputs) == len(user_prompts)
+
+    # Process the response
+    output_contents = [
+        output["choices"][0]["message"]["content"] if output else None
+        for output in outputs
+    ]
+
+    def get_score(text: Optional[str]) -> Optional[float]:
+        if text is None:
+            return None
+        try:
+            score = float(text.strip())
+            return (score - min_value) / (max_value - min_value)
+        except:
+            return None
+
+    outputs_parsed = [
+        {score_key: get_score(output_content)} for output_content in output_contents
+    ]
+
+    return outputs_parsed, usage
+
+
 # =============================
 # Main Functions
 # =============================
@@ -276,7 +429,13 @@ def generic_api_processing_step(
         questions = json.load(f)
 
     # Form the prompts
-    user_prompts = [format_question_into_prompt(question) for question in questions]
+    user_prompts, questions = zip(
+        *[
+            (format_question_into_prompt(question), question)
+            for question in questions
+            if format_question_into_prompt(question) is not None
+        ]
+    )
     api_responses_dict_to_add, usage = fetch_api_response_and_process(
         system_prompt=instruction,
         user_prompts=user_prompts,

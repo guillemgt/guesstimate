@@ -9,7 +9,7 @@ from pipeline.general.generic_api_step import (
     generic_api_processing_step,
     fetch_api_response_and_process_with_logprobs,
 )
-from pipeline.stage_4_mine_quantities import SingleValueModifier
+from pipeline.stage_4_mine_quantities import ValueModifier
 
 
 def format_question(question: dict) -> str:
@@ -38,8 +38,7 @@ def format_question(question: dict) -> str:
         modifier = value["modifier"]
         modifier = (
             modifier
-            if modifier
-            in {SingleValueModifier.MORE_THAN, SingleValueModifier.LESS_THAN}
+            if modifier in {ValueModifier.MORE_THAN, ValueModifier.LESS_THAN}
             else None
         )
         the_value = value["value"]

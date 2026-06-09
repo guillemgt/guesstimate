@@ -16,15 +16,20 @@ from pipeline.stage_5_find_excerpts import find_excerpts
 from pipeline.general.add_uuid import add_uuid
 from pipeline.general.parallelize import parallelize
 
-from pipeline.stage_6_rewrite_description import rewrite_description
+from pipeline.stage_6_rewrite_description import rewrite_description_2
 from pipeline.stage_6_filter_clarity import filter_clear, ClarityType
 from pipeline.stage_6_filter_correct import filter_correct
+from pipeline.stage_6_filter_potential import filter_potential
+from pipeline.stage_6_find_quantity_in_excerpt import find_quantity_in_found_excerpt
 
 from general.generic_filter import generic_filter
 from general.deduplicate import deduplicate
 
 from pipeline.stage_7_remove_date_and_unit_from_descriptions import (
     remove_date_and_unit_from_descriptions,
+)
+from pipeline.stage_7_expand_excerpts import (
+    expand_excerpts,
 )
 from pipeline.stage_7_remove_quantities_with_small_ints import (
     remove_quantities_with_small_ints,

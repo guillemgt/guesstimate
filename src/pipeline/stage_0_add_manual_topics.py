@@ -25,7 +25,7 @@ def add_manual_topics(
             manual_topics = json.load(f)
         articles.extend(manual_topics)
 
-    with open(output_file, "w") as f:
-        json.dump(articles, f, indent=4)
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(articles, f, ensure_ascii=False, indent=4)
 
     return output_file

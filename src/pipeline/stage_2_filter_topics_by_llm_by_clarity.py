@@ -16,7 +16,7 @@ def filter_topic_by_clarity(
     output_file: str | None = None,
     log_file: str | None = None,
     pipeline_step: int = 0,
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     logprob_threshold: float = -0.05,
 ) -> str:
 

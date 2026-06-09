@@ -16,7 +16,7 @@ def filter_topic_by_category(
     output_file: str | None = None,
     log_file: str | None = None,
     pipeline_step: int = 0,
-    model="gpt-4o-mini",
+    model="gpt-5-mini",
     logprob_threshold: float = -12.0,
 ) -> str:
 
@@ -29,13 +29,13 @@ def filter_topic_by_category(
         input_path=input_file,
         output_path=output_file,
         log_path=log_file,
-        instruction="Answer only YES if the following Wikipedia page is not for a person or about history, art, philosophy, or religion, otherwise NO.",
+        instruction="Answer only YES if the following Wikipedia page is for a person or about history, art, philosophy, or religion, otherwise NO.",
         format_question_into_prompt=lambda x: x,
         fetch_api_response_and_process=partial(
             fetch_api_response_and_process_with_logprobs,
             logprob_key="logprob-topic-category",
-            logprob_positive_tokens="YES",
-            logprob_negative_tokens="NO",
+            logprob_positive_tokens="NO",
+            logprob_negative_tokens="YES",
             completion_kwargs=dict(
                 model=model,
             ),

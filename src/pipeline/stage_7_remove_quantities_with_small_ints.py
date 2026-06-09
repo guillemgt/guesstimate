@@ -23,10 +23,14 @@ def remove_quantities_with_small_ints(
     filtered_questions = [
         question
         for question in questions
-        if "value" in question["value"]
-        and not any(
+        if "answer" in question["rewritten-description"]
+        and not all(
             isinstance(answer, int) and 0 < answer < 10
-            for answer in [question["value"]["value"]]
+            for answer in (
+                [question["rewritten-description"]["answer"]]
+                if not isinstance(question["rewritten-description"]["answer"], list)
+                else question["rewritten-description"]["answer"]
+            )
         )
     ]
 

@@ -3,6 +3,7 @@ import json
 import tiktoken
 import unicodedata
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor
 from utils.input_output import output_and_log_files
 
 
@@ -73,6 +74,13 @@ def extend_on_right_to_sentence(text, end_i):
             d += 1
 
     return end_i
+
+
+def process_topic_worker(args):
+    topic, questions, dump_path = args
+    wikidump_file = os.path.join(dump_path, f"{topic}.txt")
+    tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
+    return find_excerpt_in_topic(topic, questions, tokenizer, wikidump_file)
 
 
 def find_excerpt_in_topic(topic, questions, tokenizer, wikidump_path):
@@ -158,3 +166,5 @@ def find_excerpts(
     # Write the modified questions with found excerpts
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(questions, f, ensure_ascii=False, indent=4)
+
+    return output_file

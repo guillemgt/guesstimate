@@ -92,7 +92,7 @@ def add_topics_by_pageviews(
 
     articles.extend(list(pages_by_views.keys()))
 
-    with open(output_file, "w") as f:
-        json.dump(articles, f, indent=4)
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(articles, f, ensure_ascii=False, indent=4)
 
     return output_file

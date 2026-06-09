@@ -27,6 +27,14 @@ body {
     padding: 1em;
 }
 
+.excerpt-highlight {
+    background-color: #b00;
+    color: white;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
 button {
     cursor: pointer;
     margin-top: 10px;
